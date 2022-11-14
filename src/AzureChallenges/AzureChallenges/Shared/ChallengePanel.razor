@@ -32,7 +32,7 @@
 
                 @if (Challenge.Completed)
                 {
-                    <button class="btn btn-success" disabled="disabled">Completed!</button>
+                    <button class="btn btn-success" @onclick="OnCheckChallenge">Completed!</button>
                 }
                 else if (Challenge.Checking)
                 {

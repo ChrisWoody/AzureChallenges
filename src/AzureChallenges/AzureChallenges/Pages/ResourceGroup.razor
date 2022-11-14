@@ -4,7 +4,13 @@
 
 <h3>Resource Group</h3>
 
-@if (!_challenges.Any())
+@if (!string.IsNullOrWhiteSpace(_section.AzurePortalUrl))
+{
+    <a href="@_section.AzurePortalUrl" target="_blank">@_section.AzurePortalUrl</a>
+    <hr/>
+}
+
+@if (!_section.Challenges.Any())
 {
     <p>Loading...</p>
 }
@@ -12,7 +18,7 @@ else
 {
     <div style="max-width: 70%">
         <div class="accordion" id="accordionPanelsStayOpenExample">
-            @foreach (var challenge in _challenges)
+            @foreach (var challenge in _section.Challenges)
             {
                 <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService"/>
             }
@@ -21,10 +27,10 @@ else
 }
 
 @code {
-    private Challenge[] _challenges = Array.Empty<Challenge>();
+    private Section _section = new() {Challenges = Array.Empty<Challenge>()};
 
     protected override async Task OnInitializedAsync()
     {
-        _challenges = await ChallengeService.GetResourceGroupChallenges();
+        _section = await ChallengeService.GetResourceGroupSection();
     }
 }
