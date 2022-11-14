@@ -6,4 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\ResourceGroup.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Pages\ResourceGroup.razor" />
+    <_ContentIncludedByDefault Remove="Shared\ChallengePanel.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Shared\ChallengePanel.razor" />
+  </ItemGroup>
+
 </Project>

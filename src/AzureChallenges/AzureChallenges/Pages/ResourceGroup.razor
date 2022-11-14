@@ -1,0 +1,30 @@
+﻿@page "/resourcegroup"
+@using AzureChallenges.Data
+@inject ChallengeService ChallengeService;
+
+<h3>Resource Group</h3>
+
+@if (!_challenges.Any())
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div style="max-width: 70%">
+        <div class="accordion" id="accordionPanelsStayOpenExample">
+            @foreach (var challenge in _challenges)
+            {
+                <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService"/>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private Challenge[] _challenges = Array.Empty<Challenge>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _challenges = await ChallengeService.GetResourceGroupChallenges();
+    }
+}

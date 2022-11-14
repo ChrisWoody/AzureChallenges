@@ -1,0 +1,82 @@
+﻿@using AzureChallenges.Data
+
+@{
+    var panelId = Guid.NewGuid().ToString().ToLower();
+    var heading = $"panelsStayOpen-heading{panelId}";
+    var panel = $"panelsStayOpen-panel{panelId}";
+
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="@heading">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@panel" aria-expanded="false" aria-controls="@panel">
+                @if (Challenge.Completed)
+                {
+                    <div class="text-success">
+                        <h3><ion-icon size="large" name="checkbox-outline"></ion-icon> @Challenge.ChallengeDefinition.Name</h3>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-warning">
+                        <h3><ion-icon size="large" name="square-outline"></ion-icon> @Challenge.ChallengeDefinition.Name</h3>
+                    </div>
+                }
+            </button>
+        </h2>
+        <div id="@panel" class="accordion-collapse collapse" aria-labelledby="@heading">
+            <div class="accordion-body">
+                <p>@Challenge.ChallengeDefinition.Description</p>
+                @if (Challenge.ChallengeDefinition.RequiresInput)
+                {
+                    <input required @bind="@Challenge.Input" style="margin: 5px; width: 300px"/>
+                }
+
+                @if (Challenge.Completed)
+                {
+                    <button class="btn btn-success" disabled="disabled">Completed!</button>
+                }
+                else if (Challenge.Checking)
+                {
+                    <button class="btn btn-primary" disabled="disabled">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="sr-only">Checking...</span>
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-primary" @onclick="OnCheckChallenge">Check</button>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Challenge.Error))
+                {
+                    <p class="text-danger">@Challenge.Error</p>
+                }
+
+                @if (!string.IsNullOrEmpty(Challenge.ChallengeDefinition.Hint))
+                {
+                    <div class="alert alert-info mt-4">
+                        <ion-icon name="information-circle-outline"></ion-icon>
+                        <strong>Hint:</strong>
+                        @Challenge.ChallengeDefinition.Hint
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <p/>
+}
+
+@code {
+    [Parameter]
+    public Challenge Challenge { get; set; }
+
+    [Parameter]
+    public ChallengeService ChallengeService { get; set; }
+
+    private async Task OnCheckChallenge()
+    {
+        Challenge.Checking = true;
+        Challenge.Error = null;
+        await ChallengeService.CheckChallenge(Challenge);
+        Challenge.Checking = false;
+    }
+}
