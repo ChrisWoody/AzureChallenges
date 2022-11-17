@@ -25,9 +25,29 @@
         <div id="@panel" class="accordion-collapse collapse" aria-labelledby="@heading">
             <div class="accordion-body">
                 <p>@Challenge.ChallengeDefinition.Description</p>
-                @if (Challenge.ChallengeDefinition.RequiresInput)
+                @if (Challenge.ChallengeDefinition.ChallengeType == ChallengeType.ExistsWithInput)
                 {
                     <input required @bind="@Challenge.Input" style="margin: 5px; width: 300px"/>
+                }
+                else if (Challenge.ChallengeDefinition.ChallengeType == ChallengeType.CheckConfigured)
+                {
+
+                }
+                else if (Challenge.ChallengeDefinition.ChallengeType == ChallengeType.Quiz)
+                {
+                    <EditForm Model="@Challenge">
+                        <InputRadioGroup @bind-Value="Challenge.Input">
+                            @foreach (var option in Challenge.ChallengeDefinition.QuizOptions)
+                            {
+                                var id = Guid.NewGuid();
+                                <div class="form-check">
+                                    <InputRadio id="@id" Value="option" class="form-check-input"/>
+                                    <label for="@id" class="form-check-label">@option</label>
+                                </div>
+                            }
+                        </InputRadioGroup>
+                    </EditForm>
+                    <br/>
                 }
 
                 @if (Challenge.Completed)
