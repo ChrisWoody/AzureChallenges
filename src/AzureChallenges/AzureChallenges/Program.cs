@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AzureChallenges.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,8 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton(StateService.Create(builder.Configuration["StorageAccountConnctionString"]).GetAwaiter().GetResult());
-builder.Services.AddSingleton<ChallengeService>();
+builder.Services.AddScoped<StateService>();
+builder.Services.AddScoped<ChallengeService>();
+builder.Services.AddSingleton(await StateStorageService.Create(builder.Configuration["StorageAccountConnctionString"]));
 
 var app = builder.Build();
 
@@ -19,6 +21,17 @@ if (!app.Environment.IsDevelopment())
 }
 
 // TODO add security headers
+
+// TODO confirm that with app service authentication on that the 'name' claim should be set on login, so this would only be set for local dev
+app.Use(async (context, next) =>
+{
+    if (!context.User.HasClaim(c => c.Type == ClaimTypes.Name))
+    {
+        var claimsIdentity = context.User.Identity as ClaimsIdentity;
+        claimsIdentity?.AddClaim(new Claim(ClaimTypes.Name, "unauthenticated"));
+    }
+    await next.Invoke();
+});
 
 app.UseHttpsRedirection();
 

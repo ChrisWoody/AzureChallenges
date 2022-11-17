@@ -9,6 +9,7 @@
 
     <main>
         <div class="top-row px-4">
+            @_name
             <a href="" target="_blank">GitHub repo (soon)</a>
         </div>
 
@@ -17,3 +18,15 @@
         </article>
     </main>
 </div>
+
+@code
+{
+    private string _name;
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await authenticationStateTask;
+        _name = user.User.Identity?.Name ?? "CANT DETERMINE";
+    }
+}

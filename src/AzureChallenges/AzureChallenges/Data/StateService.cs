@@ -1,47 +1,34 @@
 ﻿using System.Text.Json;
-using Azure.Storage.Blobs;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace AzureChallenges.Data;
 
 public class StateService
 {
-    private readonly BlobContainerClient _blobContainerClient;
+    private readonly StateStorageService _stateStorageService;
+    private readonly AuthenticationStateProvider _authenticationStateProvider;
 
-    private StateService(BlobContainerClient blobContainerClient)
+    public StateService(StateStorageService stateStorageService, AuthenticationStateProvider authenticationStateProvider)
     {
-        _blobContainerClient = blobContainerClient;
-    }
-
-    public static async Task<StateService> Create(string storageAccountConnectionString)
-    {
-        var blobServiceClient = new BlobServiceClient(storageAccountConnectionString);
-        var blobContainerClient = blobServiceClient.GetBlobContainerClient("states");
-        await blobContainerClient.CreateIfNotExistsAsync();
-        return new StateService(blobContainerClient);
+        _stateStorageService = stateStorageService;
+        _authenticationStateProvider = authenticationStateProvider;
     }
 
     public async Task<State> GetState()
     {
-        // TODO determine current user id/name
-        var blobClient = _blobContainerClient.GetBlobClient("someusernameorid.json");
-        if (!(await blobClient.ExistsAsync()))
-            return new State();
-
-        var content = await blobClient.DownloadContentAsync();
-        return content.Value.Content.ToObjectFromJson<State>();
+        var filename = await GetFilename();
+        var content = await _stateStorageService.GetFile(filename);
+        return content == null ? new State() : JsonSerializer.Deserialize<State>(content);
     }
 
     public async Task SaveState(State state)
     {
-        // TODO determine current user id/name
-        var blobClient = _blobContainerClient.GetBlobClient("someusernameorid.json");
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(state);
-        await blobClient.UploadAsync(new BinaryData(bytes), overwrite: true);
+        var filename = await GetFilename();
+        await _stateStorageService.SaveFile(filename, JsonSerializer.SerializeToUtf8Bytes(state));
     }
 
     public async Task ChallengeCompleted(Challenge challenge)
     {
-        // TODO determine current user id/name
         // TODO consider leasing
         var state = await GetState();
 
@@ -53,6 +40,13 @@ public class StateService
             state.ResourceGroup = challenge.Input;
 
         await SaveState(state);
+    }
+
+    private async Task<string> GetFilename()
+    {
+        var identity = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var name = identity.User.Identity.Name.ToLower().Replace(' ', '_');
+        return $"{name}.json";
     }
 }
 
