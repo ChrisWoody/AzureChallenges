@@ -1,4 +1,6 @@
-﻿@inherits LayoutComponentBase
+﻿@using AzureChallenges.Data
+@inherits LayoutComponentBase
+@inject ChallengeService ChallengeService;
 
 <PageTitle>Azure Challenges</PageTitle>
 
@@ -9,6 +11,10 @@
 
     <main>
         <div class="top-row px-4">
+            @if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            {
+                <button class="btn btn-danger" @onclick="OnClearState">Clear state</button>
+            }
             @_name
             <a href="" target="_blank">GitHub repo (soon)</a>
         </div>
@@ -28,5 +34,10 @@
     {
         var user = await authenticationStateTask;
         _name = user.User.Identity?.Name ?? "CANT DETERMINE";
+    }
+
+    private async Task OnClearState()
+    {
+        await ChallengeService.ClearState();
     }
 }

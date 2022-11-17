@@ -5,10 +5,12 @@ namespace AzureChallenges.Data;
 public class ChallengeService
 {
     private readonly StateService _stateService;
+    private readonly AzureProvider _azureProvider;
 
-    public ChallengeService(StateService stateService)
+    public ChallengeService(StateService stateService, AzureProvider azureProvider)
     {
         _stateService = stateService;
+        _azureProvider = azureProvider;
     }
 
     public async Task<Section> GetResourceGroupSection()
@@ -38,7 +40,7 @@ public class ChallengeService
         };
     }
 
-    private static IEnumerable<ChallengeDefinition> GetChallenges()
+    private IEnumerable<ChallengeDefinition> GetChallenges()
     {
         return new[]
         {
@@ -52,10 +54,9 @@ public class ChallengeService
                 RequiresInput = true,
                 ValidateFunc = async c =>
                 {
-                    if (Guid.TryParse(c.Input, out var subscriptionId))
+                    if (!string.IsNullOrWhiteSpace(c.Input) && Guid.TryParse(c.Input, out _))
                     {
-                        // TODO actually check subscription exists instead of a random guid
-                        if (subscriptionId == Guid.Parse("cc89fb4b-6c0b-4cd5-84e6-da12983db997"))
+                        if (await _azureProvider.SubscriptionExists(c.Input))
                         {
                             c.Completed = true;
                         }
@@ -79,8 +80,8 @@ public class ChallengeService
                 RequiresInput = true,
                 ValidateFunc = async c =>
                 {
-                    // TODO actually check resource group exists
-                    if (c.Input == "testrg")
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) && await _azureProvider.ResourceGroupExists(state.SubscriptionId, c.Input))
                     {
                         c.Completed = true;
                     }
@@ -95,8 +96,6 @@ public class ChallengeService
 
     public async Task CheckChallenge(Challenge challenge)
     {
-        await Task.Delay(1000); // TODO will remove, just simulating a live environment
-
         try
         {
             await challenge.ChallengeDefinition.ValidateFunc(challenge);
@@ -111,6 +110,11 @@ public class ChallengeService
             challenge.Error = e.Message;
             challenge.Completed = false;
         }
+    }
+
+    public async Task ClearState()
+    {
+        await _stateService.SaveState(new State());
     }
 }
 

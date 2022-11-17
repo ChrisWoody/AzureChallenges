@@ -9,6 +9,12 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<StateService>();
 builder.Services.AddScoped<ChallengeService>();
 builder.Services.AddSingleton(await StateStorageService.Create(builder.Configuration["StorageAccountConnctionString"]));
+builder.Services.AddSingleton(new AzureProvider(new AzureProvider.Settings
+{
+    TenantId = builder.Configuration["TenantId"],
+    ClientId = builder.Configuration["ClientId"],
+    ClientSecret = builder.Configuration["ClientSecret"]
+}));
 
 var app = builder.Build();
 
