@@ -29,6 +29,19 @@ public class ChallengeService
             }).ToArray();
     }
 
+    public async Task<bool> CanShowSection(ResourceType resourceType)
+    {
+        switch (resourceType)
+        {
+            case ResourceType.ResourceGroup:
+                return true;
+            case ResourceType.StorageAccount:
+                return (await GetChallenges(ResourceType.ResourceGroup)).All(c => c.Completed);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(resourceType), resourceType, null);
+        }
+    }
+
     private IEnumerable<ChallengeDefinition> GetChallenges()
     {
         return new[]
@@ -97,6 +110,27 @@ public class ChallengeService
                         c.Completed = true;
                     else
                         c.Error = "Sorry that's not correct";
+                }
+            },
+
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("15202bbe-94ad-4ebf-aa15-ed93b5cef11e"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Create",
+                Description = "Storage accounts do stuff, create one, what's the name?",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) && await _azureProvider.StorageAccountExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = $"Could not find storage account '{c.Input}'.";
+                    }
                 }
             }
         };

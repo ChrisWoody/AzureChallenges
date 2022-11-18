@@ -1,19 +1,23 @@
-﻿@page "/resourcegroup"
+﻿@page "/storageaccount"
 @using AzureChallenges.Data
 @inject ChallengeService ChallengeService;
 
-<h3>Resource Group</h3>
+<h3>Storage Account</h3>
 
 <table class="table table-sm" style="max-width: fit-content">
     <tbody>
-        <tr>
-            <th>Subscription Id</th>
-            <td>@_state.SubscriptionId</td>
-        </tr>
-        <tr>
-            <th>Resource Group</th>
-            <td>@_state.ResourceGroup</td>
-        </tr>
+    <tr>
+        <th>Subscription Id</th>
+        <td>@_state.SubscriptionId</td>
+    </tr>
+    <tr>
+        <th>Resource Group</th>
+        <td>@_state.ResourceGroup</td>
+    </tr>
+    <tr>
+        <th>Storage Account</th>
+        <td>@_state.StorageAccount</td>
+    </tr>
     </tbody>
 </table>
 
@@ -40,7 +44,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _state = await ChallengeService.GetState();
-        _challenges = await ChallengeService.GetChallenges(ResourceType.ResourceGroup);
+        _challenges = await ChallengeService.GetChallenges(ResourceType.StorageAccount);
     }
 
     private async Task OnAfterCheckChallenge()

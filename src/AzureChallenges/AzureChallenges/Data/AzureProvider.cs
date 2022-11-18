@@ -34,6 +34,13 @@ public class AzureProvider
         return response.IsSuccessStatusCode;
     }
 
+    // https://learn.microsoft.com/en-au/rest/api/storagerp/storage-accounts/get-properties
+    public async Task<bool> StorageAccountExists(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}?api-version=2022-05-01");
+        return response.IsSuccessStatusCode;
+    }
+
     private async Task<HttpResponseMessage> Get(string path)
     {
         await PrepareHttpClient();
