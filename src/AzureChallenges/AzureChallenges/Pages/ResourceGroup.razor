@@ -4,13 +4,26 @@
 
 <h3>Resource Group</h3>
 
-@if (!string.IsNullOrWhiteSpace(_section.AzurePortalUrl))
-{
-    <a href="@_section.AzurePortalUrl" target="_blank">@_section.AzurePortalUrl</a>
-    <hr/>
-}
+<table class="table table-sm" style="max-width: fit-content">
+    <tbody>
+    @if (!string.IsNullOrWhiteSpace(_state.SubscriptionId))
+    {
+        <tr>
+            <th>SubscriptionId</th>
+            <td>@_state.SubscriptionId</td>
+        </tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(_state.ResourceGroup))
+    {
+        <tr>
+            <th>ResourceGroup</th>
+            <td>@_state.ResourceGroup</td>
+        </tr>
+    }
+    </tbody>
+</table>
 
-@if (!_section.Challenges.Any())
+@if (!_challenges.Any())
 {
     <p>Loading...</p>
 }
@@ -18,19 +31,27 @@ else
 {
     <div style="max-width: 70%">
         <div class="accordion" id="accordionPanelsStayOpenExample">
-            @foreach (var challenge in _section.Challenges)
+            @foreach (var challenge in _challenges)
             {
-                <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService"/>
+                <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService" OnAfterCheckChallenge="OnAfterCheckChallenge"/>
             }
         </div>
     </div>
 }
 
 @code {
-    private Section _section = new() {Challenges = Array.Empty<Challenge>()};
+    private State _state = new();
+    private Challenge[] _challenges = Array.Empty<Challenge>();
 
     protected override async Task OnInitializedAsync()
     {
-        _section = await ChallengeService.GetResourceGroupSection();
+        _state = await ChallengeService.GetState();
+        _challenges = await ChallengeService.GetChallenges(ResourceType.ResourceGroup);
+    }
+
+    private async Task OnAfterCheckChallenge()
+    {
+        _state = await ChallengeService.GetState();
+        StateHasChanged();
     }
 }

@@ -92,11 +92,16 @@
     [Parameter]
     public ChallengeService ChallengeService { get; set; }
 
+    [Parameter]
+    public Func<Task> OnAfterCheckChallenge { get; set; }
+
     private async Task OnCheckChallenge()
     {
         Challenge.Checking = true;
         Challenge.Error = null;
         await ChallengeService.CheckChallenge(Challenge);
         Challenge.Checking = false;
+        if (Challenge.Completed)
+            await OnAfterCheckChallenge();
     }
 }

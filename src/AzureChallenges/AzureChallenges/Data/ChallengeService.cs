@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace AzureChallenges.Data;
+﻿namespace AzureChallenges.Data;
 
 public class ChallengeService
 {
@@ -13,31 +11,22 @@ public class ChallengeService
         _azureProvider = azureProvider;
     }
 
-    public async Task<Section> GetResourceGroupSection()
+    public async Task<State> GetState()
+    {
+        return await _stateService.GetState();
+    }
+
+    public async Task<Challenge[]> GetChallenges(ResourceType resourceType)
     {
         var state = await _stateService.GetState();
 
-        var sb = new StringBuilder();
-        if (!string.IsNullOrWhiteSpace(state.SubscriptionId))
-        {
-            sb.Append($"https://portal.azure.com/#{"tenantname"}/resource/subscriptions/{state.SubscriptionId}");
-            if (!string.IsNullOrWhiteSpace(state.ResourceGroup))
+        return GetChallenges()
+            .Where(x => x.ResourceType == resourceType)
+            .Select(c => new Challenge
             {
-                sb.Append($"/resourceGroups/{state.ResourceGroup}");
-            }
-        }
-
-        return new Section
-        {
-            AzurePortalUrl = sb.ToString(),
-            Challenges = GetChallenges()
-                .Where(x => x.ResourceType == ResourceType.ResourceGroup)
-                .Select(c => new Challenge
-                {
-                    ChallengeDefinition = c,
-                    Completed = state.CompletedChallenges.Any(id => id == c.Id)
-                }).ToArray()
-        };
+                ChallengeDefinition = c,
+                Completed = state.CompletedChallenges.Any(id => id == c.Id)
+            }).ToArray();
     }
 
     private IEnumerable<ChallengeDefinition> GetChallenges()
@@ -163,6 +152,13 @@ public class Section
 {
     public string AzurePortalUrl { get; set; }
     public Challenge[] Challenges { get; set; }
+}
+
+public class SectionData
+{
+    public string SubscriptionId { get; set; }
+    public string ResourceGroupName { get; set; }
+    public string ResourceName { get; set; }
 }
 
 public enum ResourceType
