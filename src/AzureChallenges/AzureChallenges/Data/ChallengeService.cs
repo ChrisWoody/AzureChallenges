@@ -283,7 +283,50 @@ public class ChallengeService
                         c.Error = "Key Vault is not configured correctly";
                     }
                 }
-            }
+            },
+
+            // SQL Server --------------------------------------------------------------------------------------------------------
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("60730b90-d133-43be-9e5a-1c181a24f921"),
+                ResourceType = ResourceType.SqlServer,
+                Name = "Create",
+                Description = "SQL Server stores pools and databases",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) && await _azureProvider.SqlServerExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = $"Could not find Sql Server '{c.Input}'.";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("3153aaa4-6cb3-4688-a13c-6d5da6db12ca"),
+                ResourceType = ResourceType.SqlServer,
+                Name = "TLS1.2",
+                Description = "We should at a minimum be using TLS 1.2",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.SqlServerTls12Configured(state.SubscriptionId, state.ResourceGroup, state.SqlServer))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "SQL Server is not configured correctly";
+                    }
+                }
+            },
         };
     }
 
@@ -350,6 +393,7 @@ public enum ResourceType
     ResourceGroup,
     StorageAccount,
     KeyVault,
+    SqlServer,
 }
 
 public enum ChallengeType

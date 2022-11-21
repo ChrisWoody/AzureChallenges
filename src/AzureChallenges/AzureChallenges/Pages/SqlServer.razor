@@ -1,0 +1,55 @@
+﻿@page "/sqlserver"
+@using AzureChallenges.Data
+@inject ChallengeService ChallengeService;
+
+<h3>SQL Server</h3>
+
+<table class="table table-sm" style="max-width: fit-content">
+    <tbody>
+    <tr>
+        <th>Subscription Id</th>
+        <td>@_state.SubscriptionId</td>
+    </tr>
+    <tr>
+        <th>Resource Group</th>
+        <td>@_state.ResourceGroup</td>
+    </tr>
+    <tr>
+        <th>SQL Server</th>
+        <td>@_state.SqlServer</td>
+    </tr>
+    </tbody>
+</table>
+
+@if (!_challenges.Any())
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div style="max-width: 70%">
+        <div class="accordion" id="accordionPanelsStayOpenExample">
+            @foreach (var challenge in _challenges)
+            {
+                <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService" OnAfterCheckChallenge="OnAfterCheckChallenge"/>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private State _state = new();
+    private Challenge[] _challenges = Array.Empty<Challenge>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _state = await ChallengeService.GetState();
+        _challenges = await ChallengeService.GetChallenges(ResourceType.SqlServer);
+    }
+
+    private async Task OnAfterCheckChallenge()
+    {
+        _state = await ChallengeService.GetState();
+        StateHasChanged();
+    }
+}

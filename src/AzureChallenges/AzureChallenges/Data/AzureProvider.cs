@@ -82,7 +82,7 @@ public class AzureProvider
     {
         var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}?api-version=2022-05-01");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<StorageAccount>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new StorageAccount{Properties = new StorageAccountProperties()};
+        return await response.Content.ReadFromJsonAsync<StorageAccount>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
 
     // https://learn.microsoft.com/en-au/rest/api/keyvault/keyvault/vaults/get?tabs=HTTP
@@ -103,7 +103,28 @@ public class AzureProvider
     {
         var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{keyVaultName}?api-version=2022-07-01");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<KeyVault>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new KeyVault { Properties = new KeyVaultProperties() };
+        return await response.Content.ReadFromJsonAsync<KeyVault>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    }
+
+    // https://learn.microsoft.com/en-au/rest/api/sql/2021-02-01-preview/servers/get?tabs=HTTP
+    public async Task<bool> SqlServerExists(string subscriptionId, string resourceGroupName, string sqlServerName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}?api-version=2021-02-01-preview");
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> SqlServerTls12Configured(string subscriptionId, string resourceGroupName, string sqlServerName)
+    {
+        var sqlServer = await GetSqlServer(subscriptionId, resourceGroupName, sqlServerName);
+        return sqlServer.Properties.MinimalTlsVersion == "1.2";
+    }
+
+    // https://learn.microsoft.com/en-au/rest/api/sql/2021-02-01-preview/servers/get?tabs=HTTP
+    private async Task<SqlServer> GetSqlServer(string subscriptionId, string resourceGroupName, string sqlServerName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}?api-version=2021-02-01-preview");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<SqlServer>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
 
     private async Task<HttpResponseMessage> Get(string path)
@@ -160,5 +181,15 @@ public class AzureProvider
         public string[] Keys { get; set; }
         public string[] Secrets { get; set; }
         public string[] Certificates { get; set; }
+    }
+
+    private class SqlServer
+    {
+        public SqlServerProperties Properties { get; set; }
+    }
+
+    private class SqlServerProperties
+    {
+        public string MinimalTlsVersion { get; set; }
     }
 }
