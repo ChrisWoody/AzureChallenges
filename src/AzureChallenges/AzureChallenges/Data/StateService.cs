@@ -44,6 +44,8 @@ public class StateService
             state.KeyVault = challenge.Input;
         else if (challenge.ChallengeDefinition.Id == Guid.Parse("60730b90-d133-43be-9e5a-1c181a24f921"))
             state.SqlServer = challenge.Input;
+        else if (challenge.ChallengeDefinition.Id == Guid.Parse("cc194d7d-4866-46f9-b8f7-a193bd7f3810"))
+            state.AppService = challenge.Input;
 
         await SaveState(state);
     }
@@ -63,5 +65,6 @@ public class State
     public string StorageAccount { get; set; }
     public string KeyVault { get; set; }
     public string SqlServer { get; set; }
+    public string AppService { get; set; }
     public Guid[] CompletedChallenges { get; set; } = Array.Empty<Guid>();
 }

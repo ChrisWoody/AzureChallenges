@@ -2,6 +2,7 @@
 using Azure.Identity;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AzureChallenges.Data;
 
@@ -9,6 +10,7 @@ public class AzureProvider
 {
     private readonly TokenCredential _credential;
     private readonly HttpClient _httpClient;
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
 
     public AzureProvider(Settings settings)
     {
@@ -35,11 +37,17 @@ public class AzureProvider
         return response.IsSuccessStatusCode;
     }
 
-    // https://learn.microsoft.com/en-au/rest/api/storagerp/storage-accounts/get-properties
     public async Task<bool> StorageAccountExists(string subscriptionId, string resourceGroupName, string storageAccountName)
     {
-        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}?api-version=2022-05-01");
-        return response.IsSuccessStatusCode;
+        try
+        {
+            await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public async Task<bool> StorageAccountTls12Configured(string subscriptionId, string resourceGroupName, string storageAccountName)
@@ -82,14 +90,20 @@ public class AzureProvider
     {
         var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}?api-version=2022-05-01");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<StorageAccount>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        return await response.Content.ReadFromJsonAsync<StorageAccount>(_jsonSerializerOptions);
     }
 
-    // https://learn.microsoft.com/en-au/rest/api/keyvault/keyvault/vaults/get?tabs=HTTP
     public async Task<bool> KeyVaultExists(string subscriptionId, string resourceGroupName, string keyVaultName)
     {
-        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{keyVaultName}?api-version=2022-07-01");
-        return response.IsSuccessStatusCode;
+        try
+        {
+            await GetKeyVault(subscriptionId, resourceGroupName, keyVaultName);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public async Task<bool> KeyVaultSecretAccessConfigured(string subscriptionId, string resourceGroupName, string keyVaultName)
@@ -103,14 +117,20 @@ public class AzureProvider
     {
         var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{keyVaultName}?api-version=2022-07-01");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<KeyVault>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        return await response.Content.ReadFromJsonAsync<KeyVault>(_jsonSerializerOptions);
     }
 
-    // https://learn.microsoft.com/en-au/rest/api/sql/2021-02-01-preview/servers/get?tabs=HTTP
     public async Task<bool> SqlServerExists(string subscriptionId, string resourceGroupName, string sqlServerName)
     {
-        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}?api-version=2021-02-01-preview");
-        return response.IsSuccessStatusCode;
+        try
+        {
+            await GetSqlServer(subscriptionId, resourceGroupName, sqlServerName);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public async Task<bool> SqlServerTls12Configured(string subscriptionId, string resourceGroupName, string sqlServerName)
@@ -124,7 +144,49 @@ public class AzureProvider
     {
         var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}?api-version=2021-02-01-preview");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<SqlServer>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        return await response.Content.ReadFromJsonAsync<SqlServer>(_jsonSerializerOptions);
+    }
+
+    public async Task<bool> AppServiceExists(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        try
+        {
+            await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> AppServiceHttpsOnlyConfigured(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        return appService.Properties.HttpsOnly;
+    }
+
+    public async Task<bool> AppServiceAlwaysOnConfigured(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        return appService.SiteConfigProperties.AlwaysOn;
+    }
+    
+    // https://learn.microsoft.com/en-au/rest/api/appservice/web-apps/get
+    // https://learn.microsoft.com/en-au/rest/api/appservice/web-apps/get-configuration
+    private async Task<AppService> GetAppService(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Web/sites/{appServiceName}?api-version=2022-03-01");
+        response.EnsureSuccessStatusCode();
+        var appService = await response.Content.ReadFromJsonAsync<AppService>(_jsonSerializerOptions);
+
+        response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Web/sites/{appServiceName}/config/web?api-version=2022-03-01");
+        response.EnsureSuccessStatusCode();
+        var siteConfig = await response.Content.ReadFromJsonAsync<AppServiceSiteConfig>(_jsonSerializerOptions);
+
+        appService.SiteConfigProperties = siteConfig.Properties;
+
+        return appService;
     }
 
     private async Task<HttpResponseMessage> Get(string path)
@@ -191,5 +253,28 @@ public class AzureProvider
     private class SqlServerProperties
     {
         public string MinimalTlsVersion { get; set; }
+    }
+
+    private class AppService
+    {
+        public AppServiceProperties Properties { get; set; }
+
+        [JsonIgnore]
+        public AppServiceSiteConfigProperties SiteConfigProperties { get; set; }
+    }
+
+    private class AppServiceProperties
+    {
+        public bool HttpsOnly { get; set; }
+    }
+
+    private class AppServiceSiteConfig
+    {
+        public AppServiceSiteConfigProperties Properties { get; set; }
+    }
+
+    private class AppServiceSiteConfigProperties
+    {
+        public bool AlwaysOn { get; set; }
     }
 }

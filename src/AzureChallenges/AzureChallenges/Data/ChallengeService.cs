@@ -327,6 +327,71 @@ public class ChallengeService
                     }
                 }
             },
+
+            // App Service --------------------------------------------------------------------------------------------------------
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("cc194d7d-4866-46f9-b8f7-a193bd7f3810"),
+                ResourceType = ResourceType.AppService,
+                Name = "Create",
+                Description = "App Services allow us to host websites and run background jobs",
+                Hint = "A Basic tier App Service Plan is fine for this exercise.",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) && await _azureProvider.AppServiceExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = $"Could not find Sql Server '{c.Input}'.";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("129ad12d-6e94-4ac6-bc3f-efc2c2c5c5d5"),
+                ResourceType = ResourceType.AppService,
+                Name = "HTTPS Only",
+                Description = "Regardless if we're using the App Service as a website of a webjob runner, we should always be using HTTPS.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.AppServiceHttpsOnlyConfigured(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "App Service is not configured correctly";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("89d7bafc-d52b-4c3c-9a5d-2bfd4cb21e2e"),
+                ResourceType = ResourceType.AppService,
+                Name = "Always On",
+                Description = "If we're paying for the app service regardless if its actively used or not, we should have 'Always On' enabled, this improves cold start time for accessing the website and deployments.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.AppServiceAlwaysOnConfigured(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "App Service is not configured correctly";
+                    }
+                }
+            },
         };
     }
 
@@ -394,6 +459,7 @@ public enum ResourceType
     StorageAccount,
     KeyVault,
     SqlServer,
+    AppService,
 }
 
 public enum ChallengeType
