@@ -1,6 +1,7 @@
 ﻿using Azure.Core;
 using Azure.Identity;
 using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace AzureChallenges.Data;
 
@@ -41,6 +42,49 @@ public class AzureProvider
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool> StorageAccountTls12Configured(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var storageAccount = await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
+
+        return storageAccount.Properties.MinimumTlsVersion == "TLS1_2";
+    }
+
+    public async Task<bool> StorageAccountPublicNetworkAccessDisabled(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var storageAccount = await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
+
+        return storageAccount.Properties.PublicNetworkAccess == "Disabled";
+    }
+
+    public async Task<bool> StorageAccountPublicBlobAccessEnabled(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var storageAccount = await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
+
+        return storageAccount.Properties.AllowBlobPublicAccess;
+    }
+
+    public async Task<bool> StorageAccountSharedKeyAccessDisabled(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var storageAccount = await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
+
+        return storageAccount.Properties.AllowSharedKeyAccess == false;
+    }
+
+    public async Task<bool> StorageAccountHttpsTrafficOnlyConfigured(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var storageAccount = await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
+
+        return storageAccount.Properties.SupportsHttpsTrafficOnly;
+    }
+
+    // https://learn.microsoft.com/en-au/rest/api/storagerp/storage-accounts/get-properties
+    private async Task<StorageAccount> GetStorageAccount(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}?api-version=2022-05-01");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<StorageAccount>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new StorageAccount{Properties = new StorageAccountProperties()};
+    }
+
     private async Task<HttpResponseMessage> Get(string path)
     {
         await PrepareHttpClient();
@@ -58,5 +102,19 @@ public class AzureProvider
         public string TenantId { get; set; }
         public string? ClientId { get; set; }
         public string? ClientSecret { get; set; }
+    }
+
+    private class StorageAccount
+    {
+        public StorageAccountProperties Properties { get; set; }
+    }
+
+    private class StorageAccountProperties
+    {
+        public string? PublicNetworkAccess { get; set; }
+        public string? MinimumTlsVersion { get; set; }
+        public bool AllowBlobPublicAccess { get; set; }
+        public bool AllowSharedKeyAccess { get; set; }
+        public bool SupportsHttpsTrafficOnly { get; set; }
     }
 }

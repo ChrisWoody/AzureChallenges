@@ -132,6 +132,111 @@ public class ChallengeService
                         c.Error = $"Could not find storage account '{c.Input}'.";
                     }
                 }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("94fbda2b-b310-484f-960a-b7ac804aea1e"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Secure Transfer",
+                Description = "All requests should be over HTTPS",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.StorageAccountHttpsTrafficOnlyConfigured(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "Storage Account is not configured correctly";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("23bd7ee0-ab51-4a91-a4dc-ddb5f4cf4877"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "TLS1.2",
+                Description = "All our requests should be over TLS1.2, this allows us to enforce it at the resource level too.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.StorageAccountTls12Configured(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "Storage Account is not configured correctly";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("ab8c1780-738a-49d2-9474-db6a01865c99"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Public network access",
+                Description = "Rarely would we have files publicly accessible, so its best practice to not allow them to be configured",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.StorageAccountPublicBlobAccessEnabled(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "Storage Account is not configured correctly";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("c39e95d7-daaf-4635-9ecb-9a78cafff9b8"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Shared access key",
+                Description = "To avoid having the full connection string of a storage account, we can configure AD-only auth to it",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.StorageAccountSharedKeyAccessDisabled(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "Storage Account is not configured correctly";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("50354c41-a4ce-4090-8f64-db87c2e539cb"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Public network access",
+                Description = "If we're not making our data public accessible, we don't need the storage account to be accessible either. There may be cases where we want to access it but with credentials, but viewing it from a 'secure first' perspective lets lock it down as much as possible.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.StorageAccountPublicNetworkAccessDisabled(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "Storage Account is not configured correctly";
+                    }
+                }
             }
         };
     }
@@ -162,15 +267,14 @@ public class ChallengeService
 
 public class ChallengeDefinition
 {
-    public Guid Id { get; set; }
-    public ResourceType ResourceType { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public string Hint { get; set; }
-    public Func<Challenge, Task> ValidateFunc { get; set; }
-    public ChallengeType ChallengeType { get; set; }
-    public string[] QuizOptions { get; set; }
-
+    public Guid Id { get; init; }
+    public ResourceType ResourceType { get; init; }
+    public string Name { get; init; }
+    public string Description { get; init; }
+    public string Hint { get; init; }
+    public Func<Challenge, Task> ValidateFunc { get; init; }
+    public ChallengeType ChallengeType { get; init; }
+    public string[] QuizOptions { get; init; }
 }
 
 public class Challenge
