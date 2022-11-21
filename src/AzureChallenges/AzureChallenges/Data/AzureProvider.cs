@@ -85,6 +85,27 @@ public class AzureProvider
         return await response.Content.ReadFromJsonAsync<StorageAccount>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new StorageAccount{Properties = new StorageAccountProperties()};
     }
 
+    // https://learn.microsoft.com/en-au/rest/api/keyvault/keyvault/vaults/get?tabs=HTTP
+    public async Task<bool> KeyVaultExists(string subscriptionId, string resourceGroupName, string keyVaultName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{keyVaultName}?api-version=2022-07-01");
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> KeyVaultSecretAccessConfigured(string subscriptionId, string resourceGroupName, string keyVaultName)
+    {
+        var keyVault = await GetKeyVault(subscriptionId, resourceGroupName, keyVaultName);
+        return keyVault.Properties.AccessPolicies.Any(x => x.Permissions.Secrets.All(e => e is "Get" or "Set"));
+    }
+
+    // https://learn.microsoft.com/en-au/rest/api/keyvault/keyvault/vaults/get?tabs=HTTP
+    private async Task<KeyVault> GetKeyVault(string subscriptionId, string resourceGroupName, string keyVaultName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{keyVaultName}?api-version=2022-07-01");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<KeyVault>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new KeyVault { Properties = new KeyVaultProperties() };
+    }
+
     private async Task<HttpResponseMessage> Get(string path)
     {
         await PrepareHttpClient();
@@ -116,5 +137,28 @@ public class AzureProvider
         public bool AllowBlobPublicAccess { get; set; }
         public bool AllowSharedKeyAccess { get; set; }
         public bool SupportsHttpsTrafficOnly { get; set; }
+    }
+
+    private class KeyVault
+    {
+        public KeyVaultProperties Properties { get; set; }
+    }
+
+    private class KeyVaultProperties
+    {
+        public KeyVaultAccessPolicy[] AccessPolicies { get; set; }
+        public bool PublicNetworkAccess { get; set; }
+    }
+
+    private class KeyVaultAccessPolicy
+    {
+        public KeyVaultAccessPolicyPermissions Permissions { get; set; }
+    }
+
+    private class KeyVaultAccessPolicyPermissions
+    {
+        public string[] Keys { get; set; }
+        public string[] Secrets { get; set; }
+        public string[] Certificates { get; set; }
     }
 }

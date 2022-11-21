@@ -46,6 +46,7 @@ public class ChallengeService
     {
         return new[]
         {
+            // Resource Group --------------------------------------------------------------------------------------------------------
             new ChallengeDefinition
             {
                 Id = Guid.Parse("ad713b6f-0f21-4889-95ee-222ef1302735"),
@@ -113,6 +114,7 @@ public class ChallengeService
                 }
             },
 
+            // Storage Account --------------------------------------------------------------------------------------------------------
             new ChallengeDefinition
             {
                 Id = Guid.Parse("15202bbe-94ad-4ebf-aa15-ed93b5cef11e"),
@@ -129,7 +131,7 @@ public class ChallengeService
                     }
                     else
                     {
-                        c.Error = $"Could not find storage account '{c.Input}'.";
+                        c.Error = $"Could not find Storage Account '{c.Input}'.";
                     }
                 }
             },
@@ -237,6 +239,50 @@ public class ChallengeService
                         c.Error = "Storage Account is not configured correctly";
                     }
                 }
+            },
+
+            // Key Vault --------------------------------------------------------------------------------------------------------
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("59159eab-8a58-484a-880a-fc787a00cdfc"),
+                ResourceType = ResourceType.KeyVault,
+                Name = "Create",
+                Description = "Key Vaults are cool for storing secrets and certificates",
+                Hint = "For the purpose of these challenges, make sures it's created with the 'vault access policy', which is the default.",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) && await _azureProvider.KeyVaultExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = $"Could not find Key Vault '{c.Input}'.";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("b93ec8ad-17d1-46c7-817e-db7d2b76125d"),
+                ResourceType = ResourceType.KeyVault,
+                Name = "Assign user",
+                Description = "By creating the key vault you get full access to it, assign someone else with just Secret 'Get' and 'List' permissions",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.KeyVaultSecretAccessConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "Key Vault is not configured correctly";
+                    }
+                }
             }
         };
     }
@@ -302,7 +348,8 @@ public class SectionData
 public enum ResourceType
 {
     ResourceGroup,
-    StorageAccount
+    StorageAccount,
+    KeyVault,
 }
 
 public enum ChallengeType

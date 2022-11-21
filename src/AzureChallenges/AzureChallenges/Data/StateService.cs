@@ -40,6 +40,8 @@ public class StateService
             state.ResourceGroup = challenge.Input;
         else if (challenge.ChallengeDefinition.Id == Guid.Parse("15202bbe-94ad-4ebf-aa15-ed93b5cef11e"))
             state.StorageAccount = challenge.Input;
+        else if (challenge.ChallengeDefinition.Id == Guid.Parse("59159eab-8a58-484a-880a-fc787a00cdfc"))
+            state.KeyVault = challenge.Input;
 
         await SaveState(state);
     }
@@ -57,5 +59,6 @@ public class State
     public string SubscriptionId { get; set; }
     public string ResourceGroup { get; set; }
     public string StorageAccount { get; set; }
+    public string KeyVault { get; set; }
     public Guid[] CompletedChallenges { get; set; } = Array.Empty<Guid>();
 }
