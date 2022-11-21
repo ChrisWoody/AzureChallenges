@@ -392,6 +392,48 @@ public class ChallengeService
                     }
                 }
             },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("75f2e941-a8f2-4e35-8a0b-f0ef43a8b8bd"),
+                ResourceType = ResourceType.AppService,
+                Name = "TLS 1.2",
+                Description = "Should always be using TLS 1.2 at least",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.AppServiceTls12Configured(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "App Service is not configured correctly";
+                    }
+                }
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("ec4db30e-02f3-48e7-a37b-749587d7a7d2"),
+                ResourceType = ResourceType.AppService,
+                Name = "FTP Disabled",
+                Description = "We never use FTP to deploy to an App Service, it should be disabled, or at least only allow FTPS (their lingo, basically SFTP).",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (!string.IsNullOrWhiteSpace(c.Input) &&
+                        await _azureProvider.AppServiceFtpDisabled(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
+                        c.Completed = true;
+                    }
+                    else
+                    {
+                        c.Error = "App Service is not configured correctly";
+                    }
+                }
+            },
         };
     }
 

@@ -171,6 +171,18 @@ public class AzureProvider
         var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
         return appService.SiteConfigProperties.AlwaysOn;
     }
+
+    public async Task<bool> AppServiceTls12Configured(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        return appService.SiteConfigProperties.MinTlsVersion == "1.2";
+    }
+
+    public async Task<bool> AppServiceFtpDisabled(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        return appService.SiteConfigProperties.MinTlsVersion == "Disabled";
+    }
     
     // https://learn.microsoft.com/en-au/rest/api/appservice/web-apps/get
     // https://learn.microsoft.com/en-au/rest/api/appservice/web-apps/get-configuration
@@ -276,5 +288,6 @@ public class AzureProvider
     private class AppServiceSiteConfigProperties
     {
         public bool AlwaysOn { get; set; }
+        public string MinTlsVersion { get; set; }
     }
 }
