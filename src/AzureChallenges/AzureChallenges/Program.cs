@@ -15,6 +15,7 @@ builder.Services.AddSingleton(new AzureProvider(new AzureProvider.Settings
     ClientId = builder.Configuration["ClientId"],
     ClientSecret = builder.Configuration["ClientSecret"]
 }));
+builder.Services.AddSingleton<StateCache>();
 
 var app = builder.Build();
 

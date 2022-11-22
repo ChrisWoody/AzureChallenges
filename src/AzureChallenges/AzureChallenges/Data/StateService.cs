@@ -7,24 +7,34 @@ public class StateService
 {
     private readonly StateStorageService _stateStorageService;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
+    private readonly StateCache _stateCache;
 
-    public StateService(StateStorageService stateStorageService, AuthenticationStateProvider authenticationStateProvider)
+    public StateService(StateStorageService stateStorageService, AuthenticationStateProvider authenticationStateProvider, StateCache stateCache)
     {
         _stateStorageService = stateStorageService;
         _authenticationStateProvider = authenticationStateProvider;
+        _stateCache = stateCache;
     }
 
     public async Task<State> GetState()
     {
         var filename = await GetFilename();
+
+        var state = _stateCache.Get(filename);
+        if (state != null)
+            return state;
+
         var content = await _stateStorageService.GetFile(filename);
-        return content == null ? new State() : JsonSerializer.Deserialize<State>(content);
+        var newState = content == null ? new State() : JsonSerializer.Deserialize<State>(content);
+        _stateCache.Set(filename, newState);
+        return newState;
     }
 
     public async Task SaveState(State state)
     {
         var filename = await GetFilename();
         await _stateStorageService.SaveFile(filename, JsonSerializer.SerializeToUtf8Bytes(state));
+        _stateCache.Set(filename, state);
     }
 
     public async Task ChallengeCompleted(Challenge challenge)
