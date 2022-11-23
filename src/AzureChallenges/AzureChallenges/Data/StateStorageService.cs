@@ -19,19 +19,19 @@ public class StateStorageService
         return new StateStorageService(blobContainerClient);
     }
 
-    public async Task<byte[]?> GetFile(string filename)
+    public byte[]? GetFile(string filename)
     {
         var blobClient = _blobContainerClient.GetBlobClient(filename);
-        if (!(await blobClient.ExistsAsync()))
+        if (!(blobClient.Exists()))
             return null;
 
-        var content = await blobClient.DownloadContentAsync();
+        var content = blobClient.DownloadContent();
         return content.Value.Content.ToArray();
     }
 
-    public async Task SaveFile(string filename, byte[] content)
+    public void SaveFile(string filename, byte[] content)
     {
         var blobClient = _blobContainerClient.GetBlobClient(filename);
-        await blobClient.UploadAsync(new BinaryData(content), overwrite: true);
+        blobClient.Upload(new BinaryData(content), overwrite: true);
     }
 }

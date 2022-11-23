@@ -6,14 +6,8 @@
 
 <table class="table table-sm" style="max-width: fit-content">
     <tbody>
-        <tr>
-            <th>Subscription Id</th>
-            <td>@_state.SubscriptionId</td>
-        </tr>
-        <tr>
-            <th>Resource Group</th>
-            <td>@_state.ResourceGroup</td>
-        </tr>
+    <SectionField Title="Subscription Id" Value="@_state.SubscriptionId" />
+    <SectionField Title="Resource Group" Value="@_state.ResourceGroup" />
     </tbody>
 </table>
 
@@ -27,7 +21,10 @@ else
         <div class="accordion" id="accordionPanelsStayOpenExample">
             @foreach (var challenge in _challenges)
             {
-                <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService" OnAfterCheckChallenge="OnAfterCheckChallenge"/>
+                if (challenge.ChallengeDefinition.CanShowChallenge != null && challenge.ChallengeDefinition.CanShowChallenge(_state))
+                {
+                    <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService" OnAfterCheckChallenge="OnAfterCheckChallenge"/>
+                }
             }
         </div>
     </div>

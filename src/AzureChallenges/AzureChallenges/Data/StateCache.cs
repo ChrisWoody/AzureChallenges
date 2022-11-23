@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace AzureChallenges.Data;
 
@@ -6,18 +7,28 @@ public class StateCache
 {
     private readonly ConcurrentDictionary<string, State> _dict = new();
 
-    public StateCache()
-    {
+    private readonly StateStorageService _stateStorageService;
 
+    public StateCache(StateStorageService stateStorageService)
+    {
+        _stateStorageService = stateStorageService;
     }
 
-    public State? Get(string key)
+    public State Get(string key)
     {
-        return _dict.TryGetValue(key, out var state) ? state : null;
+        return _dict.GetOrAdd(key, key =>
+        {
+            var content = _stateStorageService.GetFile(key);
+            return content == null ? new State() : JsonSerializer.Deserialize<State>(content);
+        });
     }
 
-    public void Set(string key, State value)
+    public async Task SetAsync(string key, State state)
     {
-        _dict[key] = value;
+        using var mutex = new Mutex(true, key);
+        mutex.WaitOne(TimeSpan.FromSeconds(30));
+        _stateStorageService.SaveFile(key, JsonSerializer.SerializeToUtf8Bytes(state));
+        _dict[key] = state;
+        mutex.ReleaseMutex();
     }
 }

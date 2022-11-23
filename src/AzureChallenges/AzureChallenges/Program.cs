@@ -28,6 +28,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 // TODO add security headers
+// TODO add logging support
 
 // TODO confirm that with app service authentication on that the 'name' claim should be set on login, so this would only be set for local dev
 app.Use(async (context, next) =>

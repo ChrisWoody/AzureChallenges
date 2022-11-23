@@ -1,17 +1,14 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.Components.Authorization;
+﻿using Microsoft.AspNetCore.Components.Authorization;
 
 namespace AzureChallenges.Data;
 
 public class StateService
 {
-    private readonly StateStorageService _stateStorageService;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
     private readonly StateCache _stateCache;
 
-    public StateService(StateStorageService stateStorageService, AuthenticationStateProvider authenticationStateProvider, StateCache stateCache)
+    public StateService(AuthenticationStateProvider authenticationStateProvider, StateCache stateCache)
     {
-        _stateStorageService = stateStorageService;
         _authenticationStateProvider = authenticationStateProvider;
         _stateCache = stateCache;
     }
@@ -19,27 +16,17 @@ public class StateService
     public async Task<State> GetState()
     {
         var filename = await GetFilename();
-
-        var state = _stateCache.Get(filename);
-        if (state != null)
-            return state;
-
-        var content = await _stateStorageService.GetFile(filename);
-        var newState = content == null ? new State() : JsonSerializer.Deserialize<State>(content);
-        _stateCache.Set(filename, newState);
-        return newState;
+        return _stateCache.Get(filename);
     }
 
     public async Task SaveState(State state)
     {
         var filename = await GetFilename();
-        await _stateStorageService.SaveFile(filename, JsonSerializer.SerializeToUtf8Bytes(state));
-        _stateCache.Set(filename, state);
+        await _stateCache.SetAsync(filename, state);
     }
 
     public async Task ChallengeCompleted(Challenge challenge)
     {
-        // TODO consider leasing
         var state = await GetState();
 
         state.CompletedChallenges = state.CompletedChallenges.Concat(new[] {challenge.ChallengeDefinition.Id})

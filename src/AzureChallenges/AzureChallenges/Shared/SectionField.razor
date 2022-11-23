@@ -1,0 +1,23 @@
+﻿@using AzureChallenges.Data
+
+<tr>
+    <th>@Title</th>
+    <td>
+        @if (Value.HasValue())
+        {
+            <div>@Value</div>
+        }
+        else
+        {
+            <div style="font-style: italic; color: orange">to be set</div>
+        }
+    </td>
+</tr>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string Value { get; set; }
+}
