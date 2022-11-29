@@ -94,6 +94,31 @@ public class AzureProvider
         return await response.Content.ReadFromJsonAsync<StorageAccount>(_jsonSerializerOptions);
     }
 
+    public async Task<bool> StorageAccountBlobDiagnosticSettingsConfigured(string subscriptionId, string resourceGroupName, string storageAccountName)
+    {
+        var resourceUrl = $"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}/blobServices/default";
+        var diagnosticSettings = await GetDiagnosticSettings(resourceUrl);
+
+        if (!diagnosticSettings.Any())
+        {
+            return false;
+        }
+
+        return diagnosticSettings.Any(d =>
+            !string.IsNullOrWhiteSpace(d.Properties.StorageAccountId) && (d.Properties.Logs.All(l =>
+                l.Enabled && l.Category is "StorageRead" or "StorageWrite" or "StorageDelete")));
+    }
+
+    // https://learn.microsoft.com/en-us/rest/api/monitor/diagnostic-settings/list?tabs=HTTP
+    private async Task<DiagnosticSettings[]> GetDiagnosticSettings(string resourceUri)
+    {
+        var response = await Get($"{resourceUri}/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview");
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsStringAsync();
+        var readFromJsonAsync = await response.Content.ReadFromJsonAsync<DiagnosticSettingsResponse>(_jsonSerializerOptions);
+        return readFromJsonAsync.Value;
+    }
+
     public async Task<bool> KeyVaultExists(string subscriptionId, string resourceGroupName, string keyVaultName)
     {
         try
@@ -167,6 +192,12 @@ public class AzureProvider
         return appService.Properties.HttpsOnly;
     }
 
+    public async Task<bool> AppServiceSystemIdentityAssigned(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        return appService.Identity?.Type == "SystemAssigned";
+    }
+
     public async Task<bool> AppServiceAlwaysOnConfigured(string subscriptionId, string resourceGroupName, string appServiceName)
     {
         var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
@@ -183,6 +214,12 @@ public class AzureProvider
     {
         var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
         return appService.SiteConfigProperties.FtpsState == "Disabled";
+    }
+
+    public async Task<bool> AppServiceIpAccessRestriction(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        return appService.SiteConfigProperties.IpSecurityRestrictions?.Any(x => !string.IsNullOrWhiteSpace(x.IpAddress) && x.IpAddress != "Any") ?? false;
     }
     
     // https://learn.microsoft.com/en-au/rest/api/appservice/web-apps/get
@@ -275,6 +312,7 @@ public class AzureProvider
     private class AppService
     {
         public AppServiceProperties Properties { get; set; }
+        public AppServiceIdentity Identity { get; set; }
 
         [JsonIgnore]
         public AppServiceSiteConfigProperties SiteConfigProperties { get; set; }
@@ -283,6 +321,11 @@ public class AzureProvider
     private class AppServiceProperties
     {
         public bool HttpsOnly { get; set; }
+    }
+
+    private class AppServiceIdentity
+    {
+        public string Type { get; set; }
     }
 
     private class AppServiceSiteConfig
@@ -295,5 +338,33 @@ public class AzureProvider
         public bool AlwaysOn { get; set; }
         public string MinTlsVersion { get; set; }
         public string FtpsState { get; set; }
+        public AppServiceSiteConfigIpSecurityRestriction[] IpSecurityRestrictions { get; set; }
+    }
+
+    private class AppServiceSiteConfigIpSecurityRestriction
+    {
+        public string IpAddress { get; set; }
+    }
+
+    private class DiagnosticSettingsResponse
+    {
+        public DiagnosticSettings[] Value { get; set; }
+    }
+
+    private class DiagnosticSettings
+    {
+        public DiagnosticSettingsProperties Properties { get; set; }
+    }
+
+    private class DiagnosticSettingsProperties
+    {
+        public string StorageAccountId { get; set; }
+        public DiagnosticSetting[] Logs { get; set; }
+    }
+
+    private class DiagnosticSetting
+    {
+        public string Category { get; set; }
+        public bool Enabled { get; set; }
     }
 }

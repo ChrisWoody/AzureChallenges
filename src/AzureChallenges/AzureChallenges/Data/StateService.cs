@@ -53,6 +53,12 @@ public class StateService
         var name = identity.User.Identity.Name.ToLower().Replace(' ', '_');
         return $"{name}.json";
     }
+
+    public async Task ClearStateCacheForUser()
+    {
+        var filename = await GetFilename();
+        await _stateCache.ClearKeyFromCache(filename);
+    }
 }
 
 public class State

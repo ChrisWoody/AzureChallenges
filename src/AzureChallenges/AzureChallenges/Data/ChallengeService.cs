@@ -210,6 +210,61 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
             },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("fab1e5f0-e14a-4593-b672-aa9b41c153b6"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Challenge prep and Quiz",
+                Description = "In preparation for future challenges, create another storage account that we'll use to store logs. Unlike the Storage Account you've just configured, for this new one make sure that 'Shared Access Key' and 'Public Network Access' are both allowed, and that it's located in the same region as the original Storage Account. Have you created this new Storage Account?",
+                ChallengeType = ChallengeType.Quiz,
+                QuizOptions = new []
+                {
+                    "Yes", "No", "Maybe", "I don't know"
+                },
+                ValidateFunc = async c =>
+                {
+                    if (c.Input == "Yes")
+                        c.Completed = true;
+                    else
+                        c.Error = "Sorry that's not correct";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
+            },
+            // TODO validate that this works
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("a0a62f76-77cb-4cde-b2b0-c54da6ac00eb"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Diagnostic settings",
+                Description = "Several Azure resources support 'Diagnostic Settings' which allow you to log operations against the resource. For this challenge configure the Diagnostic Settings for 'blob' on your original Storage Account with StorageRead, StorageWrite and StorageDelete enabled, uploading to your newer 'log' storage account.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.StorageAccount.HasValue() && await _azureProvider.StorageAccountBlobDiagnosticSettingsConfigured(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                        c.Completed = true;
+                    else
+                        c.Error = "Storage Account is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("c9ceb040-3e34-4b4b-a655-9634b522490c"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Quiz",
+                Description = "Upload a random file to the original storage account, then check the 'log' storage account to see the results. What is the file extension of the log files?",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    if (string.Equals(c.Input, "json", StringComparison.InvariantCultureIgnoreCase))
+                        c.Completed = true;
+                    else
+                        c.Error = "Sorry that's not correct";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
+            },
+
 
             // Key Vault --------------------------------------------------------------------------------------------------------
             new ChallengeDefinition
@@ -372,6 +427,41 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
             },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("ab1144b4-951f-4948-908b-996d95dcdef8"),
+                ResourceType = ResourceType.AppService,
+                Name = "System assigned identity",
+                Description = "We don't want to have to manage credentials to services like Storage Accounts or Key Vaults, so configure the App Service to have a System assigned identity.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.AppService.HasValue() && await _azureProvider.AppServiceSystemIdentityAssigned(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                        c.Completed = true;
+                    else
+                        c.Error = "App Service is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("2ac3e0e9-0fef-4302-897f-17411684ea51"),
+                ResourceType = ResourceType.AppService,
+                Name = "IP Security Restriction",
+                Description = "If the website is only for internal use, we should be IP restricting to your office IP. This doesn't replace authentication/authorisation best practices, it's just another layer of security.",
+                Hint = "If you're working from home you can use your home IP instead of the office IP.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.AppService.HasValue() && await _azureProvider.AppServiceIpAccessRestriction(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                        c.Completed = true;
+                    else
+                        c.Error = "App Service is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
+            },
         };
     }
 
@@ -396,6 +486,11 @@ public class ChallengeService
     public async Task ClearState()
     {
         await _stateService.SaveState(new State());
+    }
+
+    public async Task ClearStateCache()
+    {
+        await _stateService.ClearStateCacheForUser();
     }
 }
 

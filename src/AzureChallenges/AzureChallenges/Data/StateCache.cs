@@ -31,4 +31,9 @@ public class StateCache
         _dict[key] = state;
         mutex.ReleaseMutex();
     }
+
+    public async Task ClearKeyFromCache(string key)
+    {
+        _dict.TryRemove(key, out _);
+    }
 }
