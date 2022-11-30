@@ -52,7 +52,8 @@ public class ChallengeService
                 Id = Guid.Parse("ad713b6f-0f21-4889-95ee-222ef1302735"),
                 ResourceType = ResourceType.ResourceGroup,
                 Name = "Subscription",
-                Description = "Before you create the Resource Group you should determine which subscription it will live under. What is the subscription id?",
+                Description = "Before you create the Resource Group you should determine which Subscription it will live under.",
+                Statement = "What is the Subscription Id?",
                 Hint = "It's best to use a 'development' subscription, this means you'll have access to create/update resources and benefit from dev/test pricing.",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
@@ -74,7 +75,8 @@ public class ChallengeService
                 Id = Guid.Parse("6e224d1a-40f2-48c7-bf38-05b47962cddf"),
                 ResourceType = ResourceType.ResourceGroup,
                 Name = "Create",
-                Description = "Useful for grouping Azure services together, go and create one now in the subscription you specified earlier. What is the name of the resource group you've created?",
+                Description = "Useful for grouping Azure services together, go and create one now in the subscription you specified earlier.",
+                Statement = "What is the name of the resource group you've created?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -91,7 +93,8 @@ public class ChallengeService
                 Id = Guid.Parse("23aca336-d1c4-4b66-806c-cddb6629f5a0"),
                 ResourceType = ResourceType.ResourceGroup,
                 Name = "Quiz",
-                Description = "Resource Groups sit just below Subscriptions in the resource hierarchy, what does a Subscription sit below?",
+                Description = "Resource Groups sit just below Subscriptions in the resource hierarchy, and below them the Azure resources themselves.",
+                Statement = "What does a Subscription sit below in the resource hierarchy?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
                 {
@@ -113,7 +116,8 @@ public class ChallengeService
                 Id = Guid.Parse("15202bbe-94ad-4ebf-aa15-ed93b5cef11e"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Create",
-                Description = "Storage accounts do stuff, create one, what's the name?",
+                Description = "Storage accounts do stuff, create one.",
+                Statement = "What is the name of the Storage Account you've created?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -500,6 +504,7 @@ public class ChallengeDefinition
     public ResourceType ResourceType { get; init; }
     public string Name { get; init; }
     public string Description { get; init; }
+    public string Statement { get; set; }
     public string Hint { get; init; }
     public Func<Challenge, Task> ValidateFunc { get; init; }
     public ChallengeType ChallengeType { get; init; }

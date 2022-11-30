@@ -25,6 +25,10 @@
         <div id="@panel" class="accordion-collapse collapse" aria-labelledby="@heading">
             <div class="accordion-body">
                 <p>@Challenge.ChallengeDefinition.Description</p>
+                @if (!string.IsNullOrWhiteSpace(Challenge.ChallengeDefinition.Statement))
+                {
+                    <p style="font-weight: bold">@Challenge.ChallengeDefinition.Statement</p>
+                }
                 @if (Challenge.ChallengeDefinition.ChallengeType == ChallengeType.ExistsWithInput)
                 {
                     <input required @bind="@Challenge.Input" style="margin: 5px; width: 300px"/>
