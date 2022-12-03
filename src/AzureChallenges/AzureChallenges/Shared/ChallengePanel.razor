@@ -75,6 +75,11 @@
                     <p class="text-danger">@Challenge.Error</p>
                 }
 
+                @if (!string.IsNullOrWhiteSpace(Challenge.Success))
+                {
+                    <p class="text-success">@Challenge.Success</p>
+                }
+
                 @if (!string.IsNullOrEmpty(Challenge.ChallengeDefinition.Hint))
                 {
                     <div class="alert alert-info mt-4">
@@ -103,6 +108,7 @@
     {
         Challenge.Checking = true;
         Challenge.Error = null;
+        Challenge.Success = null;
         await ChallengeService.CheckChallenge(Challenge);
         Challenge.Checking = false;
         if (Challenge.Completed)

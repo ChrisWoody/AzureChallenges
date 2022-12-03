@@ -135,6 +135,7 @@ public class AzureProvider
     public async Task<bool> KeyVaultSecretAccessConfigured(string subscriptionId, string resourceGroupName, string keyVaultName)
     {
         var keyVault = await GetKeyVault(subscriptionId, resourceGroupName, keyVaultName);
+        // TODO update to check the assigned permissions are for the website service principal
         return keyVault.Properties.AccessPolicies.Any(x => x.Permissions.Secrets.All(e => e is "get" or "list"));
     }
 

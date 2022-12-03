@@ -4,11 +4,13 @@ public class ChallengeService
 {
     private readonly StateService _stateService;
     private readonly AzureProvider _azureProvider;
+    private readonly IConfiguration _configuration;
 
-    public ChallengeService(StateService stateService, AzureProvider azureProvider)
+    public ChallengeService(StateService stateService, AzureProvider azureProvider, IConfiguration configuration)
     {
         _stateService = stateService;
         _azureProvider = azureProvider;
+        _configuration = configuration;
     }
 
     public async Task<State> GetState()
@@ -103,7 +105,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (c.Input == "Tenant")
+                    {
                         c.Completed = true;
+                        c.Success = "That's right! When you login with AD auth to a system it will be going through a Tenant which helps manage the Azure Active Directory instance, usually this is to access resources that happen to live within that Tenant but that doesn't always have to the case.";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -277,7 +282,7 @@ public class ChallengeService
                 ResourceType = ResourceType.KeyVault,
                 Name = "Create",
                 Description = "Key Vaults are cool for storing secrets and certificates",
-                Hint = "For the purpose of these challenges, make sures it's created with the 'vault access policy', which is the default.",
+                Hint = "For the purpose of these challenges, make sure it's created with the 'vault access policy', which is the default.",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -295,6 +300,7 @@ public class ChallengeService
                 ResourceType = ResourceType.KeyVault,
                 Name = "Assign user",
                 Description = "By creating the key vault you get full access to it, assign someone else with just Secret 'Get' and 'List' permissions",
+                Statement = $"Assign the '{_configuration["WebsiteServicePrincipalName"]}' user to your Key Vault only with Secret 'Get' and 'List' permissions",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -306,6 +312,9 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.KeyVault.HasValue()
             },
+            // TO ADD adding a Secret with a specific name and value that the website identity can find and validate, potentially return and display the value instead we'll see
+            // TO ADD configuring diagnostic settings to logging storage account
+            // TO ADD? quiz around the diagnositc setting, dont want this question everywhere
 
             // SQL Server --------------------------------------------------------------------------------------------------------
             new ChallengeDefinition
@@ -315,6 +324,7 @@ public class ChallengeService
                 Name = "Create",
                 Description = "SQL Server stores pools and databases",
                 Hint = "NOTE you won't be able to create a SQL Server via the Azure Portal because of our Azure Policy and that functionality is missing, use the command line OR i can provision for you",
+                // TODO consider providing more direction around the auth, likely support sql admin and ad auth and they can choose which one to connect with later on
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -343,6 +353,10 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.SqlServer.HasValue()
             },
+            // TO ADD ip restriction
+            // TO ADD sql server audit logging to log storage account
+            // TO ADD run a command against the master database, potentially provide a sample script
+            // TO ADD quiz to confirm their understanding of the audit log file
 
             // App Service --------------------------------------------------------------------------------------------------------
             new ChallengeDefinition
@@ -466,6 +480,12 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
             },
+            // TO ADD app service logs, for application logs and iis logs, likely suggest creating a 'logs' and 'iis-logs' containers
+            // TO ADD have them navigate to the website a few times
+            // TO ADD quiz around something, potentially the logs but maybe something different
+
+            // LARGER TO ADD, networking including vnets, service endpoints to name a few
+            // POTENTIAL BONUS TO ADD, have them write basic website or webjob that can connect to each of the services using its identity after the vnet has been configured
         };
     }
 
@@ -519,6 +539,7 @@ public class Challenge
     public bool Completed { get; set; }
     public string Input { get; set; }
     public string Error { get; set; }
+    public string Success { get; set; }
 }
 
 public class Section
