@@ -139,7 +139,8 @@ public class ChallengeService
                 Id = Guid.Parse("94fbda2b-b310-484f-960a-b7ac804aea1e"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Secure Transfer",
-                Description = "All requests should be over HTTPS",
+                Description = "All requests should be over HTTPS, especially if we're dealing with sensitive data.",
+                Statement = "Make 'Secure transfer required' is enabled on the Storage Account.",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -157,6 +158,7 @@ public class ChallengeService
                 ResourceType = ResourceType.StorageAccount,
                 Name = "TLS1.2",
                 Description = "All our requests should be over TLS1.2, this allows us to enforce it at the resource level too.",
+                Statement = "Make sure the minimum TLS version is configured as '1.2' on the Storage Account",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -174,6 +176,7 @@ public class ChallengeService
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Public blob access",
                 Description = "Rarely would we have files publicly accessible, so its best practice to not allow them to be configured",
+                Statement = "Make sure 'Allow Public blob access' is disabled on the Storage Account",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -189,8 +192,9 @@ public class ChallengeService
             {
                 Id = Guid.Parse("c39e95d7-daaf-4635-9ecb-9a78cafff9b8"),
                 ResourceType = ResourceType.StorageAccount,
-                Name = "Shared access key",
+                Name = "Shared account key access",
                 Description = "To avoid having the full connection string of a storage account, we can configure AD-only auth to it",
+                Statement = "Make sure 'Allow storage account key access' is disabled on the Storage Account'",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -202,12 +206,14 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
             },
+            // TODO consider making this a IP restriction one instead. Can still touch on public access but might be a bit too restrictive initially
             new ChallengeDefinition
             {
                 Id = Guid.Parse("50354c41-a4ce-4090-8f64-db87c2e539cb"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Public network access",
                 Description = "If we're not making our data public accessible, we don't need the storage account to be accessible either. There may be cases where we want to access it but with credentials, but viewing it from a 'secure first' perspective lets lock it down as much as possible.",
+                Statement = "Make sure 'Public network access' is disabled on the Storage Account",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -224,7 +230,8 @@ public class ChallengeService
                 Id = Guid.Parse("fab1e5f0-e14a-4593-b672-aa9b41c153b6"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Challenge prep and Quiz",
-                Description = "In preparation for future challenges, create another storage account that we'll use to store logs. Unlike the Storage Account you've just configured, for this new one make sure that 'Shared Access Key' and 'Public Network Access' are both allowed, and that it's located in the same region as the original Storage Account. Have you created this new Storage Account?",
+                Description = "In preparation for future challenges, create another storage account that we'll use to store logs. Unlike the Storage Account you've just configured, for this new one make sure that 'Shared Access Key' and 'Public Network Access' are both allowed, and that it's located in the same region as the original Storage Account.",
+                Statement = "Have you created this new Storage Account?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
                 {
@@ -239,13 +246,13 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
             },
-            // TODO validate that this works
             new ChallengeDefinition
             {
                 Id = Guid.Parse("a0a62f76-77cb-4cde-b2b0-c54da6ac00eb"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Diagnostic settings",
-                Description = "Several Azure resources support 'Diagnostic Settings' which allow you to log operations against the resource. For this challenge configure the Diagnostic Settings for 'blob' on your original Storage Account with StorageRead, StorageWrite and StorageDelete enabled, uploading to your newer 'log' storage account.",
+                Description = "Several Azure resources support 'Diagnostic Settings' which allow you to log operations against the resource, with this you can audit all the operations against a resource, including who accessed it and when. Also by disabling the Shared Access Key and requiring AD Auth, this can be correlated to an identity.",
+                Statement = "Configure the Diagnostic Settings for 'blob' on your original Storage Account with StorageRead, StorageWrite and StorageDelete enabled, uploading to your new 'log' storage account",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -262,7 +269,8 @@ public class ChallengeService
                 Id = Guid.Parse("c9ceb040-3e34-4b4b-a655-9634b522490c"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Quiz",
-                Description = "Upload a random file to the original storage account, then check the 'log' storage account to see the results. What is the file extension of the log files?",
+                Description = "Upload a random file to the original storage account, then check the 'log' storage account to see the results.",
+                Statement = "What is the file extension of the log files?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -282,6 +290,7 @@ public class ChallengeService
                 ResourceType = ResourceType.KeyVault,
                 Name = "Create",
                 Description = "Key Vaults are cool for storing secrets and certificates",
+                Statement = "Create a Key Vault. What is its name?",
                 Hint = "For the purpose of these challenges, make sure it's created with the 'vault access policy', which is the default.",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
@@ -296,6 +305,25 @@ public class ChallengeService
             },
             new ChallengeDefinition
             {
+                Id = Guid.Parse("93e5852f-c668-4764-a6d5-6ec977054628"),
+                ResourceType = ResourceType.KeyVault,
+                Name = "Diagnostic settings",
+                Description = "See what happens and who did what",
+                Statement = $"Configure the Diagnostic Settings on the Key Vault to your logging Storage Account, with 'audit 'and 'allLogs' enabled",
+                Hint = "It may take a litte bit for the logs to appear in the Storage Account, don't worry to much about it, you can look at them later.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.KeyVault.HasValue() && await _azureProvider.KeyVaultDiagnosticSettingsConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault))
+                        c.Completed = true;
+                    else
+                        c.Error = "Key Vault is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.KeyVault.HasValue()
+            },
+            new ChallengeDefinition
+            {
                 Id = Guid.Parse("b93ec8ad-17d1-46c7-817e-db7d2b76125d"),
                 ResourceType = ResourceType.KeyVault,
                 Name = "Assign user",
@@ -305,16 +333,58 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     var state = await _stateService.GetState();
-                    if (state.KeyVault.HasValue() && await _azureProvider.KeyVaultSecretAccessConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault))
+                    if (state.KeyVault.HasValue() && await _azureProvider.KeyVaultSecretAccessConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault, _configuration["WebsiteServicePrincipalId"]))
                         c.Completed = true;
                     else
                         c.Error = "Key Vault is not configured correctly";
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.KeyVault.HasValue()
             },
-            // TO ADD adding a Secret with a specific name and value that the website identity can find and validate, potentially return and display the value instead we'll see
-            // TO ADD configuring diagnostic settings to logging storage account
-            // TO ADD? quiz around the diagnositc setting, dont want this question everywhere
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("c19e0669-a94d-4056-851a-ad7147292c8b"),
+                ResourceType = ResourceType.KeyVault,
+                Name = "Secrets",
+                Description = "Secrets allow you to store secrets, they can have versions and expirations.",
+                Statement = $"Generate a Secret with 'super-secret' as the name and any value that you want, which the website will retrieve.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+
+                    if (state.KeyVault.HasValue())
+                    {
+                        var secretValue = await _azureProvider.GetKeyVaultSecretValue(state.KeyVault, "super-secret");
+                        if (!string.IsNullOrWhiteSpace(secretValue))
+                        {
+                            c.Success = $"The super secret: {secretValue}";
+                            c.Completed = true;
+                        }
+                        else
+                            c.Error = "Key Vault is not configured correctly";
+                    }
+                    else
+                        c.Error = "Key Vault is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.KeyVault.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("a5da83f2-47ab-4db5-9c33-2a529190220c"),
+                ResourceType = ResourceType.KeyVault,
+                Name = "Quiz",
+                Statement = "What is the text on the button that allows you to view the secret's value in the Azure portal?",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    if (string.Equals(c.Input, "show secret value", StringComparison.InvariantCultureIgnoreCase))
+                        c.Completed = true;
+                    else
+                        c.Error = "Sorry that's not correct";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.KeyVault.HasValue()
+            },
+            // TODO add ip restriction of some kind?
 
             // SQL Server --------------------------------------------------------------------------------------------------------
             new ChallengeDefinition
@@ -484,8 +554,12 @@ public class ChallengeService
             // TO ADD have them navigate to the website a few times
             // TO ADD quiz around something, potentially the logs but maybe something different
 
-            // LARGER TO ADD, networking including vnets, service endpoints to name a few
-            // POTENTIAL BONUS TO ADD, have them write basic website or webjob that can connect to each of the services using its identity after the vnet has been configured
+            // Could provide basic code for a website that will check it can connect to key vault/storage/database server, showing how to build/deploy it and setting the urls
+            // Once they've deployed it it will show it can't connect, have them wire up their website's identity to access the resources (list permisions on keyvault, admin on db server just for simplicity, blob contributor)
+            // Refreshing the page should show it can now connect
+            // Next step is to configure them in vnets and service endpoints, confirm via the website that it can still connect
+            // Then making all the services non-public, setting up private links, updating urls to those services likely, and confirm it can still connect
+            // Might be a 'try this, but dont have much instructions for you at the moment'
         };
     }
 

@@ -132,11 +132,24 @@ public class AzureProvider
         }
     }
 
-    public async Task<bool> KeyVaultSecretAccessConfigured(string subscriptionId, string resourceGroupName, string keyVaultName)
+    public async Task<bool> KeyVaultSecretAccessConfigured(string subscriptionId, string resourceGroupName, string keyVaultName, string websiteServicePrincipalId)
     {
         var keyVault = await GetKeyVault(subscriptionId, resourceGroupName, keyVaultName);
-        // TODO update to check the assigned permissions are for the website service principal
-        return keyVault.Properties.AccessPolicies.Any(x => x.Permissions.Secrets.All(e => e is "get" or "list"));
+        return keyVault.Properties.AccessPolicies.Any(x => x.ObjectId == websiteServicePrincipalId && x.Permissions.Secrets.All(e => e is "get" or "list"));
+    }
+
+    // https://learn.microsoft.com/en-au/rest/api/keyvault/secrets/get-secret/get-secret?tabs=HTTP
+    public async Task<string> GetKeyVaultSecretValue(string keyVaultName, string secretName)
+    {
+        var token = await _credential.GetTokenAsync(new TokenRequestContext(new[] { "https://vault.azure.net/.default" }), CancellationToken.None);
+        var keyVaultClient = new HttpClient();
+        keyVaultClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+        keyVaultClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        var response = await keyVaultClient.GetAsync($"https://{keyVaultName}.vault.azure.net/secrets/{secretName}?api-version=7.3");
+        response.EnsureSuccessStatusCode();
+        var keyVaultSecret = await response.Content.ReadFromJsonAsync<KeyVaultSecret>(_jsonSerializerOptions);
+
+        return keyVaultSecret.Value;
     }
 
     // https://learn.microsoft.com/en-au/rest/api/keyvault/keyvault/vaults/get?tabs=HTTP
@@ -145,6 +158,21 @@ public class AzureProvider
         var response = await Get($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{keyVaultName}?api-version=2022-07-01");
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<KeyVault>(_jsonSerializerOptions);
+    }
+
+    public async Task<bool> KeyVaultDiagnosticSettingsConfigured(string subscriptionId, string resourceGroupName, string keyVaultName)
+    {
+        var resourceUrl = $"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{keyVaultName}";
+        var diagnosticSettings = await GetDiagnosticSettings(resourceUrl);
+
+        if (!diagnosticSettings.Any())
+        {
+            return false;
+        }
+
+        return diagnosticSettings.Any(d =>
+            !string.IsNullOrWhiteSpace(d.Properties.StorageAccountId) && (d.Properties.Logs.All(l =>
+                l.Enabled && l.CategoryGroup is "audit" or "allLogs")));
     }
 
     public async Task<bool> SqlServerExists(string subscriptionId, string resourceGroupName, string sqlServerName)
@@ -290,6 +318,7 @@ public class AzureProvider
 
     private class KeyVaultAccessPolicy
     {
+        public string ObjectId { get; set; }
         public KeyVaultAccessPolicyPermissions Permissions { get; set; }
     }
 
@@ -298,6 +327,11 @@ public class AzureProvider
         public string[] Keys { get; set; }
         public string[] Secrets { get; set; }
         public string[] Certificates { get; set; }
+    }
+
+    private class KeyVaultSecret
+    {
+        public string Value { get; set; }
     }
 
     private class SqlServer
@@ -366,6 +400,7 @@ public class AzureProvider
     private class DiagnosticSetting
     {
         public string Category { get; set; }
+        public string CategoryGroup { get; set; }
         public bool Enabled { get; set; }
     }
 }
