@@ -202,6 +202,33 @@ public class AzureProvider
         return await response.Content.ReadFromJsonAsync<SqlServer>(_jsonSerializerOptions);
     }
 
+    // https://learn.microsoft.com/en-us/rest/api/sql/2021-02-01-preview/server-blob-auditing-policies/get?tabs=HTTP
+    public async Task<bool> SqlServerAuditingEnabled(string subscriptionId, string resourceGroupName, string sqlServerName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}/auditingSettings/default?api-version=2021-02-01-preview");
+        response.EnsureSuccessStatusCode();
+        var auditing = await response.Content.ReadFromJsonAsync<SqlServerAuditing>(_jsonSerializerOptions);
+        return auditing.Properties.State.Equals("enabled", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(auditing.Properties.StorageEndpoint);
+    }
+
+    // https://learn.microsoft.com/en-us/rest/api/sql/2022-05-01-preview/firewall-rules/list-by-server?tabs=HTTP
+    public async Task<bool> SqlServerAnyIpRestriction(string subscriptionId, string resourceGroupName, string sqlServerName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}/firewallRules?api-version=2022-05-01-preview");
+        response.EnsureSuccessStatusCode();
+        var auditing = await response.Content.ReadFromJsonAsync<SqlServerIpRestrictions>(_jsonSerializerOptions);
+        return auditing.Value.Any(x => !x.Name.Equals("AllowAllWindowsAzureIps", StringComparison.OrdinalIgnoreCase));
+    }
+
+    // https://learn.microsoft.com/en-us/rest/api/sql/2022-05-01-preview/firewall-rules/list-by-server?tabs=HTTP
+    public async Task<bool> SqlServerAllowAzureResourcesException(string subscriptionId, string resourceGroupName, string sqlServerName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}/firewallRules?api-version=2022-05-01-preview");
+        response.EnsureSuccessStatusCode();
+        var auditing = await response.Content.ReadFromJsonAsync<SqlServerIpRestrictions>(_jsonSerializerOptions);
+        return auditing.Value.Any(x => x.Name.Equals("AllowAllWindowsAzureIps", StringComparison.OrdinalIgnoreCase));
+    }
+
     public async Task<bool> AppServiceExists(string subscriptionId, string resourceGroupName, string appServiceName)
     {
         try
@@ -342,6 +369,27 @@ public class AzureProvider
     private class SqlServerProperties
     {
         public string MinimalTlsVersion { get; set; }
+    }
+
+    private class SqlServerAuditing
+    {
+        public SqlServerAuditingProperties Properties { get; set; }
+    }
+
+    private class SqlServerAuditingProperties
+    {
+        public string State { get; set; }
+        public string StorageEndpoint { get; set; }
+    }
+
+    private class SqlServerIpRestrictions
+    {
+        public SqlServerIpRestriction[] Value { get; set; }
+    }
+
+    private class SqlServerIpRestriction
+    {
+        public string Name { get; set; }
     }
 
     private class AppService
