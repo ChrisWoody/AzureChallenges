@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Data;
 using System.Net.Mime;
 using System.Text;
@@ -14,7 +13,6 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-
 app.MapGet("/", async () =>
 {
     // Prepare the credential for future requests
@@ -22,9 +20,8 @@ app.MapGet("/", async () =>
         ? new DefaultAzureCredential(new DefaultAzureCredentialOptions { TenantId = app.Configuration["TenantId"] })
         : new ClientSecretCredential(app.Configuration["TenantId"], app.Configuration["ClientId"], app.Configuration["ClientSecret"]);
 
-    
     // Try connect to the storage account and list its containers
-    string[]? containers = null;
+    var containers = Array.Empty<string>();
     var storageError = "";
     try
     {
@@ -37,7 +34,7 @@ app.MapGet("/", async () =>
     }
 
     // Try connect to the key vault and list its secret names
-    string[]? keyVaultSecretNames = null;
+    var keyVaultSecretNames = Array.Empty<string>();
     var keyVaultError = "";
     try
     {
@@ -62,66 +59,58 @@ app.MapGet("/", async () =>
         sqlCommand.CommandType = CommandType.Text;
         sqlCommand.CommandText = "select getdate()";
 
-        if (sqlCommand.ExecuteScalar() is DateTime result)
+        var result = sqlCommand.ExecuteScalar();
+        sqlServerTime = result as DateTime?;
+        if (sqlServerTime == null)
         {
-            sqlServerTime = result;
-        }
-        else
-        {
-            sqlServerError = $"Could connect but the result isn't expected";
+            sqlServerError = $"Could connect but the result isn't expected: {result}";
         }
     }
     catch (Exception e)
     {
-        keyVaultError = $"Failed to connect to Sql Server '{app.Configuration["SqlServer"]}': {e.Message}";
+        sqlServerError = $"Failed to connect to Sql Server '{app.Configuration["SqlServer"]}': {e.Message}";
     }
 
+    // Build a simple (but nice looking) page to show if we can connect to the services or not
     var sb = new StringBuilder();
     sb.AppendLine("<!DOCTYPE html>");
     sb.AppendLine("<html lang=\"en\">");
     sb.AppendLine("<head>");
+    sb.AppendLine("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css\" integrity=\"sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm\" crossorigin=\"anonymous\">");
     sb.AppendLine("<meta charset='utf-8'/>");
     sb.AppendLine("<title>Connection Checker Website</title>");
     sb.AppendLine("</head>");
-    sb.AppendLine("<body>");
-    if (string.IsNullOrWhiteSpace(storageError))
-    {
-        sb.AppendLine($"<p style=\"\">Successfully connected to the '{app.Configuration["StorageAccountName"]}' Storage Account!</p>");
-        foreach (var container in containers)
-        {
-            sb.AppendLine($"<p>- {container}</p>");
-        }
-    }
-    else
-    {
-        sb.AppendLine($"<p style=\"\">Failed to connect to the '{app.Configuration["StorageAccountName"]}' Storage Account</p>");
-        sb.AppendLine($"<p>{storageError}</p>");
-    }
+    sb.AppendLine("<body style=\"text-align: center;\">");
 
-    if (string.IsNullOrWhiteSpace(keyVaultError))
-    {
-        sb.AppendLine($"<p style=\"\">Successfully connected to the '{app.Configuration["KeyVaultName"]}' Key Vault!</p>");
-        foreach (var keyVaultSecretName in keyVaultSecretNames)
-        {
-            sb.AppendLine($"<p>- {keyVaultSecretName}</p>");
-        }
-    }
-    else
-    {
-        sb.AppendLine($"<p style=\"\">Failed to connect to the '{app.Configuration["KeyVaultName"]}' Key Vault</p>");
-        sb.AppendLine($"<p>{keyVaultError}</p>");
-    }
+    sb.AppendLine($"<p>Last ran: {TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("W. Australia Standard Time"))}</p>");
 
-    if (string.IsNullOrWhiteSpace(sqlServerError))
-    {
-        sb.AppendLine($"<p style=\"\">Successfully connected to the '{app.Configuration["SqlServerName"]}' SQL Server!</p>");
-        sb.AppendLine($"<p>Result of query: {sqlServerTime}</p>");
-    }
-    else
-    {
-        sb.AppendLine($"<p style=\"\">Failed to connect to the '{app.Configuration["SqlServerName"]}' SQL Server</p>");
-        sb.AppendLine($"<p>{sqlServerError}</p>");
-    }
+    sb.AppendLine($@"<div class=""card"">
+  <div class=""card-header"" style=""background-color: {(string.IsNullOrWhiteSpace(storageError) ? "lightgreen" : "orangered")}"">
+    <h3>Storage Account - {(string.IsNullOrWhiteSpace(storageError) ? "Connected" : "Could not connect")}</h3>
+  </div>
+  <div class=""card-body"">
+    <p class=""card-text"">{(string.IsNullOrWhiteSpace(storageError) ? "Containers: " + string.Join(", ", containers) : "Error: " + storageError)}</p>
+  </div>
+</div>");
+
+    sb.AppendLine($@"<div class=""card"">
+  <div class=""card-header"" style=""background-color: {(string.IsNullOrWhiteSpace(keyVaultError) ? "lightgreen" : "orangered")}"">
+    <h3>Key Vault - {(string.IsNullOrWhiteSpace(keyVaultError) ? "Connected" : "Could not connect")}</h3>
+  </div>
+  <div class=""card-body"">
+    <p class=""card-text"">{(string.IsNullOrWhiteSpace(keyVaultError) ? "Secret names: " + string.Join(", ", keyVaultSecretNames) : "Error: " + keyVaultError)}</p>
+  </div>
+</div>");
+
+    sb.AppendLine($@"<div class=""card"">
+  <div class=""card-header"" style=""background-color: {(string.IsNullOrWhiteSpace(sqlServerError) ? "lightgreen" : "orangered")}"">
+    <h3>SQL Server - {(string.IsNullOrWhiteSpace(sqlServerError) ? "Connected" : "Could not connect")}</h3>
+  </div>
+  <div class=""card-body"">
+    <p class=""card-text"">{(string.IsNullOrWhiteSpace(sqlServerError) ? "SQL Server time: " + sqlServerTime : "Error: " + sqlServerError)}</p>
+  </div>
+</div>");
+
     sb.AppendLine("</body>");
     sb.AppendLine("</html>");
 
