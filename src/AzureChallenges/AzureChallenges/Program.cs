@@ -29,7 +29,6 @@ if (!app.Environment.IsDevelopment())
 
 app.Use(async (context, next) =>
 {
-    app.Logger.LogInformation("api called");
     if (!context.User.HasClaim(c => c.Type == ClaimTypes.Name))
     {
         var claimsIdentity = context.User.Identity as ClaimsIdentity;

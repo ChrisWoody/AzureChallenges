@@ -79,7 +79,7 @@ public class ChallengeService
                 Id = Guid.Parse("6e224d1a-40f2-48c7-bf38-05b47962cddf"),
                 ResourceType = ResourceType.ResourceGroup,
                 Name = "Create",
-                Description = "Useful for grouping Azure services together, go and create one now in the subscription you specified earlier.",
+                Description = "Useful for grouping Azure services together, go and create one now in the subscription you specified earlier. You can also specify its Location which represents an Azure data centre, however resources can exist in another data centre if you want but its nice to keep them together for consistency.",
                 Statement = "What is the name of the resource group you've created?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
@@ -125,6 +125,7 @@ public class ChallengeService
                 Name = "Create",
                 Description = "Storage accounts do stuff, create one.",
                 Statement = "What is the name of the Storage Account you've created?",
+                Hint = "Try to keep your resources in the same Location as the Resource Group, and don't worry too much about the various options when creating a storage account, we'll configure them in the next set of challenges.",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -166,7 +167,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.StorageAccount.HasValue() && await _azureProvider.StorageAccountTls12Configured(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
                         c.Completed = true;
+                        c.Success = "Depending on how you provisioned the Storage Account, you may have noticed you couldn't create it unless you specified TLS 1.2. Our Azure Policy prevents most services from being provisioned or updated unless TLS 1.2 is set.";
+                    }
                     else
                         c.Error = "Storage Account is not configured correctly";
                 },
@@ -196,7 +200,7 @@ public class ChallengeService
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Public Network Access",
                 Description = "Even if we don't allow blobs to be publicly (i.e. anonymously) accessible, its still possible to connect to a Storage Account from anywhere. There is a flag that allows you to disable any public network access, which means only connections can be made from within a virtual network.",
-                Statement = "We'll leave this flag disabled for now, is that OK with you?",
+                Statement = "We'll leave this flag disabled for now and come back to it later. Is that OK with you?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
                 {
@@ -235,7 +239,7 @@ public class ChallengeService
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Challenge prep and Quiz",
                 Description = "In preparation for future challenges, create another storage account that we'll use to store logs. Unlike the Storage Account you've just configured, for this new one make sure that 'Shared Access Key' and 'Public Network Access' are both allowed, and that it's located in the same region as the original Storage Account.",
-                Statement = "Have you created this new Storage Account?",
+                Statement = "Have you created this new 'log' Storage Account?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
                 {
@@ -273,12 +277,30 @@ public class ChallengeService
                 Id = Guid.Parse("c9ceb040-3e34-4b4b-a655-9634b522490c"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Quiz",
-                Description = "Upload a random file to the original Storage Account, then check the 'log' storage account to see the results. This will require you to create a Container first.",
+                Description = "Upload a random file to the original Storage Account (you'll need to create a Container first), then check the 'log' Storage Account to see the results. Note it may take a few minutes for the logs to appear, and they are not stored in the '$logs' container.",
                 Statement = "What is the file extension of the log files?",
+                Hint = "You can access your original Storage Account via the Azure Portal or the Azure Storage Explorer. Or even via the command line if you're feeling adventurous.",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
                     if (string.Equals(c.Input, "json", StringComparison.InvariantCultureIgnoreCase))
+                        c.Completed = true;
+                    else
+                        c.Error = "Sorry that's not correct";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("e3f14e1d-4c92-4ce7-b7c2-eaeba5710aa6"),
+                ResourceType = ResourceType.StorageAccount,
+                Name = "Quiz",
+                Description = "The three operations that we're monitoring (read, write and delete) each have their own container. Find the log file for the 'write' operation, which will contain information about the file you uploaded.",
+                Statement = "What is the 'operationName' used for when you uploaded the file?",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    if (string.Equals(c.Input, "PutBlob", StringComparison.InvariantCultureIgnoreCase))
                         c.Completed = true;
                     else
                         c.Error = "Sorry that's not correct";
@@ -295,7 +317,7 @@ public class ChallengeService
                 Name = "Create",
                 Description = "Key Vaults are cool for storing secrets and certificates",
                 Statement = "Create a Key Vault. What is its name?",
-                Hint = "For the purpose of these challenges, make sure it's created with the 'vault access policy', which is the default.",
+                Hint = "For the purpose of these challenges, make sure it's created with the 'vault access policy' (which is the default).",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -331,13 +353,13 @@ public class ChallengeService
                 Id = Guid.Parse("b93ec8ad-17d1-46c7-817e-db7d2b76125d"),
                 ResourceType = ResourceType.KeyVault,
                 Name = "Assign user",
-                Description = "By creating the key vault you get full access to it, assign someone else with just Secret 'Get' and 'List' permissions",
+                Description = "By creating the key vault you get full access to it, however you should grant yourself and whoever needs access limited read-only permissions",
                 Statement = $"Assign the '{_configuration["WebsiteServicePrincipalName"]}' user to your Key Vault only with Secret 'Get' and 'List' permissions",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
                     var state = await _stateService.GetState();
-                    if (state.KeyVault.HasValue() && await _azureProvider.KeyVaultSecretAccessConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault, _configuration["WebsiteServicePrincipalId"]))
+                    if (state.KeyVault.HasValue() && await _azureProvider.KeyVaultSecretAccessConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault, _configuration["WebsiteServicePrincipalObjectId"]))
                         c.Completed = true;
                     else
                         c.Error = "Key Vault is not configured correctly";
@@ -391,7 +413,7 @@ public class ChallengeService
             new ChallengeDefinition
             {
                 Id = Guid.Parse("50354c41-a4ce-4090-8f64-db87c2e539cb"),
-                ResourceType = ResourceType.StorageAccount,
+                ResourceType = ResourceType.KeyVault,
                 Name = "Public Network Access",
                 Description = "Similar to the Storage Account, it is possible to restrict access to the Key Valut to only over a virtual network.",
                 Statement = "But again we'll leave this flag disabled for now, OK?",
@@ -407,7 +429,7 @@ public class ChallengeService
                     else
                         c.Error = "Sorry that's not correct";
                 },
-                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.KeyVault.HasValue()
             },
 
             // SQL Server --------------------------------------------------------------------------------------------------------
@@ -488,8 +510,7 @@ public class ChallengeService
                 Id = Guid.Parse("ac5e0f0e-87e7-4c5c-a4f5-342e95e1f2b6"),
                 ResourceType = ResourceType.SqlServer,
                 Name = "Allowing Azure Resources",
-                Description = "If we just had an IP restriction, services like an App Service will fail to connect to the SQL Server to query a database. We'll go through a couple of ways to connect securely later, but for now we'll just allow any Azure resource to connect. " +
-                              "This flag works in tandem with the previous IP Restriction, allowing both your IP Restriction and any Azure service to connect.",
+                Description = "If we just had an IP restriction to connect via the office, services like an App Service will fail to connect to the SQL Server to query a database. We'll go through a couple of ways to connect securely later, but for now we'll just allow any Azure resource to connect.",
                 Statement = "Configure the 'Allow Azure services and resources to access this server' exception on your SQL Server",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
@@ -502,9 +523,70 @@ public class ChallengeService
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.SqlServer.HasValue()
             },
-
-            // TO ADD run a command against the master database, potentially provide a sample script
-            // TO ADD quiz to confirm their understanding of the audit log file
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("0533517c-d2d4-4c48-86e4-19e7d11de4d8"),
+                ResourceType = ResourceType.SqlServer,
+                Name = "Query the master database",
+                Description = "Since you've added an IP Restriction so that you can connect to SQL Server, you can now query it to see the auditing logs that are generated.",
+                Statement = "Connect to the SQL Server however you want (C#, Linqpad or SSMS to name a few) and run any query you want. Have you run the query?",
+                Hint = "The query could just be getting the current time of the SQL Server, it doesn't matter as long as its run.",
+                ChallengeType = ChallengeType.Quiz,
+                QuizOptions = new []
+                {
+                    "Yes", "No"
+                },
+                ValidateFunc = async c =>
+                {
+                    if (c.Input == "Yes")
+                    {
+                        c.Completed = true;
+                        c.Success = "Well done!";
+                    }
+                    else
+                        c.Error = "Sorry that's not correct";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.SqlServer.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("c1b75b2e-f606-4193-be84-46a7fb126c1c"),
+                ResourceType = ResourceType.SqlServer,
+                Name = "Quiz",
+                Statement = "What is the file extension of the SQL audit log files?",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    if (string.Equals(c.Input, "xel", StringComparison.InvariantCultureIgnoreCase))
+                        c.Completed = true;
+                    else
+                        c.Error = "Sorry that's not correct";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("c1b75b2e-f606-4193-be84-46a7fb126c1c"),
+                ResourceType = ResourceType.SqlServer,
+                Name = "Optional Quiz - Inspect audit log",
+                Description = "If you have SQL Server Management Studio (SSMS) installed you can view the audit log file. " +
+                              "By default it only shows the 'name' and 'timestamp' columns, you can choose whichs columns appear including 'statement' which is the actual SQL query that was run.",
+                Statement = "What is the 'action_name' of the query you ran? Use 'who knows' if you'd like to skip this challenge.",
+                ChallengeType = ChallengeType.ExistsWithInput,
+                ValidateFunc = async c =>
+                {
+                    if (string.Equals(c.Input, "BATCH COMPLETED", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        c.Completed = true;
+                        c.Success = "Nice work!";
+                    }
+                    else if (string.Equals(c.Input, "who knows", StringComparison.InvariantCultureIgnoreCase))
+                        c.Completed = true;
+                    else
+                        c.Error = "Sorry that's not correct";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.StorageAccount.HasValue()
+            },
 
             // App Service --------------------------------------------------------------------------------------------------------
             new ChallengeDefinition
@@ -513,7 +595,7 @@ public class ChallengeService
                 ResourceType = ResourceType.AppService,
                 Name = "Create",
                 Description = "App Services allow us to host websites and run background jobs",
-                Hint = "A Basic tier App Service Plan is fine for this exercise, it's cheap and we'll delete it later.",
+                Statement = "Create an App Service on Basic tier, .NET 7 and without Application Insights. What is the name of the App Service?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -521,7 +603,7 @@ public class ChallengeService
                     if (c.Input.HasValue() && await _azureProvider.AppServiceExists(state.SubscriptionId, state.ResourceGroup, c.Input))
                         c.Completed = true;
                     else
-                        c.Error = $"Could not find Sql Server '{c.Input}'.";
+                        c.Error = $"Could not find App Service '{c.Input}'.";
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue()
             },
@@ -530,7 +612,8 @@ public class ChallengeService
                 Id = Guid.Parse("129ad12d-6e94-4ac6-bc3f-efc2c2c5c5d5"),
                 ResourceType = ResourceType.AppService,
                 Name = "HTTPS Only",
-                Description = "Regardless if we're using the App Service as a website of a webjob runner, we should always be using HTTPS.",
+                Description = "Regardless if we're using the App Service as a website or a webjob runner, we should always be using HTTPS.",
+                Statement = "Make sure the 'HTTPS Only' flag is enabled",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -548,6 +631,7 @@ public class ChallengeService
                 ResourceType = ResourceType.AppService,
                 Name = "Always On",
                 Description = "If we're paying for the app service regardless if its actively used or not, we should have 'Always On' enabled, this improves cold start time for accessing the website and deployments.",
+                Statement = "Make sure the 'Always On' flag is enabled",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -565,12 +649,16 @@ public class ChallengeService
                 ResourceType = ResourceType.AppService,
                 Name = "TLS 1.2",
                 Description = "Should always be using TLS 1.2 at least",
+                Statement = "Maked sure TLS is configured at 1.2",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
                     var state = await _stateService.GetState();
                     if (state.AppService.HasValue() && await _azureProvider.AppServiceTls12Configured(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
                         c.Completed = true;
+                        c.Success = "Even with our Azure Policy for TLS 1.2, any newly created App Service will default to TLS 1.2 anyway";
+                    }
                     else
                         c.Error = "App Service is not configured correctly";
                 },
@@ -582,6 +670,7 @@ public class ChallengeService
                 ResourceType = ResourceType.AppService,
                 Name = "FTP Disabled",
                 Description = "We never use FTP to deploy to an App Service, it should be disabled, or at least only allow FTPS (their lingo, basically SFTP).",
+                Statement = "Make sure 'FTP State' is set to 'Disabled'",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -599,6 +688,7 @@ public class ChallengeService
                 ResourceType = ResourceType.AppService,
                 Name = "System assigned identity",
                 Description = "We don't want to have to manage credentials to services like Storage Accounts or Key Vaults, so configure the App Service to have a System assigned identity.",
+                Statement = "Enable the 'System assigned' Identity on the App Service",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -616,7 +706,7 @@ public class ChallengeService
                 ResourceType = ResourceType.AppService,
                 Name = "IP Security Restriction",
                 Description = "If the website is only for internal use, we should be IP restricting to your office IP. This doesn't replace authentication/authorisation best practices, it's just another layer of security.",
-                Hint = "If you're working from home you can use your home IP instead of the office IP.",
+                Statement = "Add an IP Restriction on your app service (either for the office IP or your home IP)",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
