@@ -5,12 +5,14 @@ public class ChallengeService
     private readonly StateService _stateService;
     private readonly AzureProvider _azureProvider;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<ChallengeService> _logger;
 
-    public ChallengeService(StateService stateService, AzureProvider azureProvider, IConfiguration configuration)
+    public ChallengeService(StateService stateService, AzureProvider azureProvider, IConfiguration configuration, ILogger<ChallengeService> logger)
     {
         _stateService = stateService;
         _azureProvider = azureProvider;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<State> GetState()
@@ -653,7 +655,7 @@ public class ChallengeService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError(e, "Unexpected exception occurred");
             challenge.Error = e.Message;
             challenge.Completed = false;
         }

@@ -9,13 +9,10 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<StateService>();
 builder.Services.AddScoped<ChallengeService>();
 builder.Services.AddSingleton(await StateStorageService.Create(builder.Configuration["StorageAccountConnctionString"]));
-builder.Services.AddSingleton(new AzureProvider(new AzureProvider.Settings
-{
-    TenantId = builder.Configuration["TenantId"],
-    ClientId = builder.Configuration["ClientId"],
-    ClientSecret = builder.Configuration["ClientSecret"]
-}));
+builder.Services.AddSingleton<AzureProvider>();
 builder.Services.AddSingleton<StateCache>();
+
+builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
 
@@ -30,13 +27,21 @@ if (!app.Environment.IsDevelopment())
 // TODO add security headers
 // TODO add logging support
 
-// TODO confirm that with app service authentication on that the 'name' claim should be set on login, so this would only be set for local dev
 app.Use(async (context, next) =>
 {
+    app.Logger.LogInformation("api called");
     if (!context.User.HasClaim(c => c.Type == ClaimTypes.Name))
     {
         var claimsIdentity = context.User.Identity as ClaimsIdentity;
-        claimsIdentity?.AddClaim(new Claim(ClaimTypes.Name, "unauthenticated"));
+        if (context.Request.Headers.ContainsKey("X-MS-CLIENT-PRINCIPAL-NAME"))
+        {
+            var requestHeader = context.Request.Headers["X-MS-CLIENT-PRINCIPAL-NAME"];
+            claimsIdentity?.AddClaim(new Claim(ClaimTypes.Name, requestHeader));
+        }
+        else
+        {
+            claimsIdentity?.AddClaim(new Claim(ClaimTypes.Name, "unauthenticated"));
+        }
     }
     await next.Invoke();
 });

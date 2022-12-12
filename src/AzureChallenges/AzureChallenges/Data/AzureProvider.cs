@@ -8,18 +8,21 @@ namespace AzureChallenges.Data;
 
 public class AzureProvider
 {
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<AzureProvider> _logger;
     private readonly TokenCredential _credential;
-    private readonly HttpClient _httpClient;
+    private readonly HttpClient _httpClient = new();
     private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
     private DateTimeOffset _tokenExpiry = DateTimeOffset.MinValue;
 
-    public AzureProvider(Settings settings)
+    public AzureProvider(IConfiguration configuration, ILogger<AzureProvider> logger)
     {
-        _credential = string.IsNullOrWhiteSpace(settings.ClientId) || string.IsNullOrWhiteSpace(settings.ClientSecret)
-            ? new DefaultAzureCredential(new DefaultAzureCredentialOptions {TenantId = settings.TenantId})
-            : new ClientSecretCredential(settings.TenantId, settings.ClientId, settings.ClientSecret);
+        _configuration = configuration;
+        _logger = logger;
+        _credential = string.IsNullOrWhiteSpace(_configuration["ClientId"]) || string.IsNullOrWhiteSpace(_configuration["ClientSecret"])
+            ? new DefaultAzureCredential(new DefaultAzureCredentialOptions { TenantId = _configuration["TenantId"] })
+            : new ClientSecretCredential(_configuration["TenantId"], _configuration["ClientId"], _configuration["ClientSecret"]);
 
-        _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri("https://management.azure.com");
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
@@ -45,8 +48,9 @@ public class AzureProvider
             await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Error getting Storage Account");
             return false;
         }
     }
@@ -126,8 +130,9 @@ public class AzureProvider
             await GetKeyVault(subscriptionId, resourceGroupName, keyVaultName);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Error getting Key Vault");
             return false;
         }
     }
@@ -182,8 +187,9 @@ public class AzureProvider
             await GetSqlServer(subscriptionId, resourceGroupName, sqlServerName);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Error getting SQL Server");
             return false;
         }
     }
@@ -236,8 +242,9 @@ public class AzureProvider
             await GetAppService(subscriptionId, resourceGroupName, appServiceName);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Error getting App Service");
             return false;
         }
     }
