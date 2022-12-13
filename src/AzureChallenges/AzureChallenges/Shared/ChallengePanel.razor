@@ -29,6 +29,12 @@
                 {
                     <p style="font-weight: bold">@Challenge.ChallengeDefinition.Statement</p>
                 }
+                
+                @if (!string.IsNullOrWhiteSpace(Challenge.ChallengeDefinition.Link))
+                {
+                    <p><a href="@Challenge.ChallengeDefinition.Link">@Challenge.ChallengeDefinition.Link</a></p>
+                }
+
                 @if (Challenge.ChallengeDefinition.ChallengeType == ChallengeType.ExistsWithInput)
                 {
                     <input required @bind="@Challenge.Input" style="margin: 5px; width: 300px"/>
@@ -54,11 +60,7 @@
                     <br/>
                 }
 
-                @if (Challenge.Completed)
-                {
-                    <button class="btn btn-success" @onclick="OnCheckChallenge">Completed!</button>
-                }
-                else if (Challenge.Checking)
+                @if (Challenge.Checking)
                 {
                     <button class="btn btn-primary" disabled="disabled">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>

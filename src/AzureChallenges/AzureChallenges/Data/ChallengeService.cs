@@ -65,7 +65,10 @@ public class ChallengeService
                     if (c.Input.HasValue() && Guid.TryParse(c.Input, out _))
                     {
                         if (await _azureProvider.SubscriptionExists(c.Input))
+                        {
                             c.Completed = true;
+                            c.Success = "Success!";
+                        }
                         else
                             c.Error = $"Could not found subscription with id '{c.Input}'.";
                     }
@@ -86,7 +89,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (c.Input.HasValue() && await _azureProvider.ResourceGroupExists(state.SubscriptionId, c.Input))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = $"Could not find resource group '{c.Input}'.";
                 },
@@ -131,7 +137,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (!string.IsNullOrWhiteSpace(c.Input) && await _azureProvider.StorageAccountExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = $"Could not find Storage Account '{c.Input}'.";
                 },
@@ -149,7 +158,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (!string.IsNullOrWhiteSpace(state.StorageAccount) && await _azureProvider.StorageAccountHttpsTrafficOnlyConfigured(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Storage Account is not configured correctly";
                 },
@@ -188,7 +200,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.StorageAccount.HasValue() && await _azureProvider.StorageAccountPublicBlobAccessDisabled(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Storage Account is not configured correctly";
                 },
@@ -209,7 +224,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (c.Input == "Yes")
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -227,7 +245,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.StorageAccount.HasValue() && await _azureProvider.StorageAccountSharedKeyAccessDisabled(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Storage Account is not configured correctly";
                 },
@@ -248,7 +269,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (c.Input == "Yes")
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -266,7 +290,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.StorageAccount.HasValue() && await _azureProvider.StorageAccountBlobDiagnosticSettingsConfigured(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Storage Account is not configured correctly";
                 },
@@ -284,7 +311,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (string.Equals(c.Input, "json", StringComparison.InvariantCultureIgnoreCase))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -301,7 +331,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (string.Equals(c.Input, "PutBlob", StringComparison.InvariantCultureIgnoreCase))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -323,7 +356,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (c.Input.HasValue() && await _azureProvider.KeyVaultExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = $"Could not find Key Vault '{c.Input}'.";
                 },
@@ -342,7 +378,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.KeyVault.HasValue() && await _azureProvider.KeyVaultDiagnosticSettingsConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Key Vault is not configured correctly";
                 },
@@ -360,7 +399,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.KeyVault.HasValue() && await _azureProvider.KeyVaultSecretAccessConfigured(state.SubscriptionId, state.ResourceGroup, state.KeyVault, _configuration["WebsiteServicePrincipalObjectId"]))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Key Vault is not configured correctly";
                 },
@@ -404,7 +446,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (string.Equals(c.Input, "show secret value", StringComparison.InvariantCultureIgnoreCase))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -425,7 +470,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (c.Input == "Yes")
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -446,7 +494,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (c.Input.HasValue() && await _azureProvider.SqlServerExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = $"Could not find Sql Server '{c.Input}'.";
                 },
@@ -463,7 +514,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.SqlServer.HasValue() && await _azureProvider.SqlServerTls12Configured(state.SubscriptionId, state.ResourceGroup, state.SqlServer))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "SQL Server is not configured correctly";
                 },
@@ -481,7 +535,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.SqlServer.HasValue() && await _azureProvider.SqlServerAuditingEnabled(state.SubscriptionId, state.ResourceGroup, state.SqlServer))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "SQL Server is not configured correctly";
                 },
@@ -499,7 +556,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.SqlServer.HasValue() && await _azureProvider.SqlServerAnyIpRestriction(state.SubscriptionId, state.ResourceGroup, state.SqlServer))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "SQL Server is not configured correctly";
                 },
@@ -517,7 +577,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.SqlServer.HasValue() && await _azureProvider.SqlServerAllowAzureResourcesException(state.SubscriptionId, state.ResourceGroup, state.SqlServer))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "SQL Server is not configured correctly";
                 },
@@ -558,7 +621,10 @@ public class ChallengeService
                 ValidateFunc = async c =>
                 {
                     if (string.Equals(c.Input, "xel", StringComparison.InvariantCultureIgnoreCase))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -581,7 +647,10 @@ public class ChallengeService
                         c.Success = "Nice work!";
                     }
                     else if (string.Equals(c.Input, "who knows", StringComparison.InvariantCultureIgnoreCase))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "Sorry that's not correct";
                 },
@@ -601,7 +670,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (c.Input.HasValue() && await _azureProvider.AppServiceExists(state.SubscriptionId, state.ResourceGroup, c.Input))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = $"Could not find App Service '{c.Input}'.";
                 },
@@ -619,7 +691,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.AppService.HasValue() && await _azureProvider.AppServiceHttpsOnlyConfigured(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "App Service is not configured correctly";
                 },
@@ -637,7 +712,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.AppService.HasValue() && await _azureProvider.AppServiceAlwaysOnConfigured(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "App Service is not configured correctly";
                 },
@@ -676,7 +754,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.AppService.HasValue() && await _azureProvider.AppServiceFtpDisabled(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "App Service is not configured correctly";
                 },
@@ -686,7 +767,7 @@ public class ChallengeService
             {
                 Id = Guid.Parse("ab1144b4-951f-4948-908b-996d95dcdef8"),
                 ResourceType = ResourceType.AppService,
-                Name = "System assigned identity",
+                Name = "System assigned Identity",
                 Description = "We don't want to have to manage credentials to services like Storage Accounts or Key Vaults, so configure the App Service to have a System assigned identity.",
                 Statement = "Enable the 'System assigned' Identity on the App Service",
                 ChallengeType = ChallengeType.CheckConfigured,
@@ -694,7 +775,10 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.AppService.HasValue() && await _azureProvider.AppServiceSystemIdentityAssigned(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "App Service is not configured correctly";
                 },
@@ -712,17 +796,169 @@ public class ChallengeService
                 {
                     var state = await _stateService.GetState();
                     if (state.AppService.HasValue() && await _azureProvider.AppServiceIpAccessRestriction(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
                         c.Completed = true;
+                        c.Success = "Success!";
+                    }
                     else
                         c.Error = "App Service is not configured correctly";
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
             },
-            // TO ADD app service logs, for application logs and iis logs, likely suggest creating a 'logs' and 'iis-logs' containers
-            // TO ADD have them navigate to the website a few times
-            // TO ADD quiz around something, potentially the logs but maybe something different
-            // TO ADD have them grant their app service's identity to the key vault, sql server and storage account
-            // TO ADD have them deploy the supplied website, having them configure the urls. PERHAPS since we know the urls on the server, just modify the config before providing it?
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("f69e66a5-6e89-4229-a6aa-478a53ec7f9a"),
+                ResourceType = ResourceType.AppService,
+                Name = "App Service logs",
+                Description = "Though App Service support Diagnostic logs (setup the same as the Storage Account and Key Vault), for this challenge we'll look at the 'App Service logs'. " +
+                              "This allows us to store logs on the App Service's local storage or export to a Storage Account. With local storage configured you can use log streaming too.",
+                Statement = "Configure 'Application logging (Blob)' and 'Web server logging' to your 'log' Storage Account. You can put them in 'logs' and 'logs-iis' containers respectively if you want.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.AppService.HasValue() && await _azureProvider.AppServiceLogsConfigured(state.SubscriptionId, state.ResourceGroup, state.AppService))
+                    {
+                        c.Completed = true;
+                        c.Success = "Success!";
+                    }
+                    else
+                        c.Error = "App Service is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("ae4d8fc4-f3bc-48aa-8c87-b1ee0be2b495"),
+                ResourceType = ResourceType.AppService,
+                Name = "Optional - Inspect generated logs",
+                Description = "Navigate to your website a few times and have a look at the IIS logs. These will show when a HTTP request is made, the path, response status code and more.",
+                Statement = "Did you inspect the logs?",
+                ChallengeType = ChallengeType.Quiz,
+                QuizOptions = new []
+                {
+                    "Yes", "No"
+                },
+                ValidateFunc = async c =>
+                {
+                    c.Completed = true;
+                    c.Success = "Wonderful!";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("49b09563-44e6-4203-8f49-cede211d9bba"),
+                ResourceType = ResourceType.AppService,
+                Name = "'Connection checker' website configuration",
+                Description = "You have provisioned a couple of services now, lets validate that the App Service can connect to them with it's identity. Before we deploy the 'Connection checker' website you'll need to configure some 'Application settings' on your App Service.",
+                Statement = $"Add the following Application settings: StorageAccountName = {{your Storage Account name}}, KeyVaultName = {{your Key Vault name}}, SqlServerName = {{your SQL Server name}} and TenantId = {_configuration["TenantId"]}. Have you added those settings?",
+                ChallengeType = ChallengeType.Quiz,
+                QuizOptions = new []
+                {
+                    "Yes", "No"
+                },
+                ValidateFunc = async c =>
+                {
+                    if (c.Input == "Yes")
+                    {
+                        c.Completed = true;
+                        c.Success = "Excellent!";
+                    }
+                    else
+                        c.Error = "OK i'll wait";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("9d2692c6-4c3c-4443-a75a-2ed0584572f6"),
+                ResourceType = ResourceType.AppService,
+                Name = "'Connection checker' website upload",
+                Description = "There are various ways to deploy to an App Service, here we'll use the Kudu portal and have it nicely deploy our .zip for us.",
+                Statement = "Right-click and save the zip, navigate to 'https://<website name here>.scm.azurewebsites.net/ZipDeployUI' and drag the zip onto the page. After that's completed navigate to your website 'https://<website name here>.azurewebsites.net'. You might see some errors but that's OK! Are you ready to continue?",
+                Link = "/downloads/AzureChallenges.ConnectionCheckerWebsite.zip",
+                ChallengeType = ChallengeType.Quiz,
+                QuizOptions = new []
+                {
+                    "Yes", "No"
+                },
+                ValidateFunc = async c =>
+                {
+                    if (c.Input == "Yes")
+                    {
+                        c.Completed = true;
+                        c.Success = "OK!";
+                    }
+                    else
+                        c.Error = ":(";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("cf1a2b36-95b6-4f22-962a-f38ca9b0d1f0"),
+                ResourceType = ResourceType.AppService,
+                Name = "Granting App Service access to Storage Account",
+                Description = "In preparation of the next set of challenges, you'll need to grant your App Services to the other resources you've provisioned.",
+                Statement = "Grant your App Service's managed identity the 'Storage Blob Data Contributor' role on your Storage Account.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.AppService.HasValue() && await _azureProvider.AppServiceAssignedToStorageAccount(state.SubscriptionId, state.ResourceGroup, state.AppService, state.StorageAccount))
+                    {
+                        c.Completed = true;
+                        c.Success = "Excellent! If you go back to your website it should show that it can connect successfully now.";
+                    }
+                    else
+                        c.Error = "Storage Account is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue() && s.StorageAccount.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("09c5cc76-3c48-4eab-adf2-adf99b446814"),
+                ResourceType = ResourceType.AppService,
+                Name = "Granting App Service access to Key Vault",
+                Description = "In preparation of the next set of challenges, you'll need to grant your App Services to the other resources you've provisioned.",
+                Statement = "Grant your App Service's managed identity Secret 'Get' and 'List' permissions to your Key Vault.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.AppService.HasValue() && await _azureProvider.AppServiceAssignedToKeyVault(state.SubscriptionId, state.ResourceGroup, state.AppService, state.KeyVault))
+                    {
+                        c.Completed = true;
+                        c.Success = "Excellent! If you go back to your website it should show that it can connect successfully now.";
+                    }
+                    else
+                        c.Error = "Key Vault is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue() && s.KeyVault.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("35e98698-9059-4fbf-b2cf-c37ff23c2d9b"),
+                ResourceType = ResourceType.AppService,
+                Name = "Granting App Service access to SQL Server",
+                Description = "In preparation of the next set of challenges, you'll need to grant your App Services to the other resources you've provisioned.",
+                Statement = "Set your App Service's managed identity as the Active Directory Admin on your SQL Server.",
+                Hint = "Strictly speaking we shouldn't be assigning the App Service as an Admin on the server, its too-much access to all databases on the server, but for now it's OK.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await _stateService.GetState();
+                    if (state.AppService.HasValue() && await _azureProvider.AppServiceAssignedToSqlServer(state.SubscriptionId, state.ResourceGroup, state.AppService, state.SqlServer))
+                    {
+                        c.Completed = true;
+                        c.Success = "Excellent! If you go back to your website it should show that it can connect successfully now.";
+                    }
+                    else
+                        c.Error = "SQL Server is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue() && s.SqlServer.HasValue()
+            },
 
             // Could provide basic code for a website that will check it can connect to key vault/storage/database server, showing how to build/deploy it and setting the urls
             // Once they've deployed it it will show it can't connect, have them wire up their website's identity to access the resources (list permisions on keyvault, admin on db server just for simplicity, blob contributor)
@@ -738,7 +974,7 @@ public class ChallengeService
         try
         {
             await challenge.ChallengeDefinition.ValidateFunc(challenge);
-            if (challenge.Completed)
+            if (challenge.Completed && !string.IsNullOrWhiteSpace(challenge.Success))
             {
                 await _stateService.ChallengeCompleted(challenge);
             }
@@ -774,6 +1010,7 @@ public class ChallengeDefinition
     public ChallengeType ChallengeType { get; init; }
     public string[] QuizOptions { get; init; }
     public Func<State, bool>? CanShowChallenge { get; set; }
+    public string Link { get; set; }
 }
 
 public class Challenge

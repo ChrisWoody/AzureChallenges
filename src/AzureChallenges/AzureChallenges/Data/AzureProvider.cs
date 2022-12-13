@@ -284,7 +284,62 @@ public class AzureProvider
         var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
         return appService.SiteConfigProperties.IpSecurityRestrictions?.Any(x => !string.IsNullOrWhiteSpace(x.IpAddress) && x.IpAddress != "Any") ?? false;
     }
-    
+
+    public async Task<bool> AppServiceLogsConfigured(string subscriptionId, string resourceGroupName, string appServiceName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{appServiceName}/config/logs?api-version=2022-03-01");
+        response.EnsureSuccessStatusCode();
+        var logs = await response.Content.ReadFromJsonAsync<AppServiceLogs>(_jsonSerializerOptions);
+        return !string.IsNullOrWhiteSpace(logs.Properties.ApplicationLogs.AzureBlobStorage.SasUrl) &&
+               !string.IsNullOrWhiteSpace(logs.Properties.HttpLogs.AzureBlobStorage.SasUrl);
+    }
+
+    public async Task<bool> AppServiceAssignedToStorageAccount(string subscriptionId, string resourceGroupName, string appServiceName, string storageAccountName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+
+        var rbacs = await GetRbacs($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}");
+        foreach (var rbac in rbacs.Where(x => x.Properties.PrincipalId == appService.Identity.PrincipalId))
+        {
+            var rbacDefinition = await GetRbacDefinition(rbac.Properties.RoleDefinitionId);
+            if (rbacDefinition.Properties.RoleName == "Storage Blob Data Contributor")
+                return true;
+        }
+
+        return false;
+    }
+
+    public async Task<bool> AppServiceAssignedToKeyVault(string subscriptionId, string resourceGroupName, string appServiceName, string keyVaultName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        var keyVault = await GetKeyVault(subscriptionId, resourceGroupName, keyVaultName);
+
+        return keyVault.Properties.AccessPolicies.Any(x => x.ObjectId == appService.Identity.PrincipalId && x.Permissions.Secrets.All(e => e is "get" or "list"));
+    }
+
+    public async Task<bool> AppServiceAssignedToSqlServer(string subscriptionId, string resourceGroupName, string appServiceName, string sqlServerName)
+    {
+        var sqlServer = await GetSqlServer(subscriptionId, resourceGroupName, sqlServerName);
+        return sqlServer.Properties.Administrators?.Login == appServiceName;
+    }
+
+    // https://learn.microsoft.com/en-us/rest/api/authorization/role-assignments/list-for-resource?tabs=HTTP
+    private async Task<Rbac[]> GetRbacs(string resourceUrl)
+    {
+        var response = await Get(resourceUrl + "/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01");
+        response.EnsureSuccessStatusCode();
+        var rbacResponse = await response.Content.ReadFromJsonAsync<RbacResponse>(_jsonSerializerOptions);
+        return rbacResponse.Value;
+    }
+
+    // https://learn.microsoft.com/en-us/rest/api/authorization/role-definitions/get?tabs=HTTP
+    private async Task<RbacDefinition> GetRbacDefinition(string rbacDefinitionUrl)
+    {
+        var response = await Get(rbacDefinitionUrl + "?api-version=2022-04-01");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<RbacDefinition>(_jsonSerializerOptions);
+    }
+
     // https://learn.microsoft.com/en-au/rest/api/appservice/web-apps/get
     // https://learn.microsoft.com/en-au/rest/api/appservice/web-apps/get-configuration
     private async Task<AppService> GetAppService(string subscriptionId, string resourceGroupName, string appServiceName)
@@ -376,6 +431,12 @@ public class AzureProvider
     private class SqlServerProperties
     {
         public string MinimalTlsVersion { get; set; }
+        public SqlServerPropertiesAdministrator? Administrators { get; set; }
+    }
+
+    private class SqlServerPropertiesAdministrator
+    {
+        public string Login { get; set; }
     }
 
     private class SqlServerAuditing
@@ -415,6 +476,7 @@ public class AzureProvider
 
     private class AppServiceIdentity
     {
+        public string PrincipalId { get; set; }
         public string Type { get; set; }
     }
 
@@ -434,6 +496,27 @@ public class AzureProvider
     private class AppServiceSiteConfigIpSecurityRestriction
     {
         public string IpAddress { get; set; }
+    }
+
+    private class AppServiceLogs
+    {
+        public AppServiceLogsProperties Properties { get; set; }
+    }
+
+    private class AppServiceLogsProperties
+    {
+        public AppServiceLogsPropertiesLogs ApplicationLogs { get; set; }
+        public AppServiceLogsPropertiesLogs HttpLogs { get; set; }
+    }
+
+    private class AppServiceLogsPropertiesLogs
+    {
+        public AppServiceLogsPropertiesLogsBlob AzureBlobStorage { get; set; }
+    }
+
+    private class AppServiceLogsPropertiesLogsBlob
+    {
+        public string SasUrl { get; set; }
     }
 
     private class DiagnosticSettingsResponse
@@ -457,5 +540,31 @@ public class AzureProvider
         public string Category { get; set; }
         public string CategoryGroup { get; set; }
         public bool Enabled { get; set; }
+    }
+
+    private class RbacResponse
+    {
+        public Rbac[] Value { get; set; }
+    }
+
+    private class Rbac
+    {
+        public RbacProperties Properties { get; set; }
+    }
+
+    private class RbacProperties
+    {
+        public string RoleDefinitionId { get; set; }
+        public string PrincipalId { get; set; }
+    }
+
+    private class RbacDefinition
+    {
+        public RbacDefinitionProperties Properties { get; set; }
+    }
+
+    private class RbacDefinitionProperties
+    {
+        public string RoleName { get; set; }
     }
 }
