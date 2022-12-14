@@ -357,6 +357,66 @@ public class AzureProvider
         return appService;
     }
 
+    public async Task<bool> VirtualNetworkExistsAndIsConfigured(string subscriptionId, string resourceGroupName, string virtualNetworkName)
+    {
+        try
+        {
+            var virtualNetwork = await GetVirtualNetwork(subscriptionId, resourceGroupName, virtualNetworkName);
+            return virtualNetwork.Properties.AddressSpace.AddressPrefixes.Any(x => x == "10.0.0.0/16") &&
+                   virtualNetwork.Properties.Subnets.Any(x => x is { Name: "default", Properties.AddressPrefix: "10.0.0.0/24" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error getting Virtual Network");
+            return false;
+        }
+    }
+
+    public async Task<bool> VirtualNetworkSubnetHasServiceEndpointsConfigured(string subscriptionId, string resourceGroupName, string virtualNetworkName)
+    {
+        try
+        {
+            var virtualNetwork = await GetVirtualNetwork(subscriptionId, resourceGroupName, virtualNetworkName);
+            return virtualNetwork.Properties.Subnets.Any(x =>
+                x is { Name: "default", Properties.ServiceEndpoints.Length: >= 3 }
+                && x.Properties.ServiceEndpoints.All(e => e.Service is "Microsoft.KeyVault" or "Microsoft.Sql" or "Microsoft.Storage"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error getting Virtual Network");
+            return false;
+        }
+    }
+
+    public async Task<bool> StorageAccountIsConnectedToVirtualNetwork(string subscriptionId, string resourceGroupName, string virtualNetworkName, string storageAccountName)
+    {
+        var storageAccount = await GetStorageAccount(subscriptionId, resourceGroupName, storageAccountName);
+        return storageAccount.Properties.NetworkAcls?.VirtualNetworkRules.Any(x => x.Id.EndsWith($"{virtualNetworkName}/subnets/default")) ?? false;
+    }
+
+    public async Task<bool> KeyVaultIsConnectedToVirtualNetwork(string subscriptionId, string resourceGroupName, string virtualNetworkName, string keyVaultName)
+    {
+        var keyVault = await GetKeyVault(subscriptionId, resourceGroupName, keyVaultName);
+        return keyVault.Properties.NetworkAcls?.VirtualNetworkRules.Any(x => x.Id.EndsWith($"{virtualNetworkName}/subnets/default")) ?? false;
+    }
+
+    // https://learn.microsoft.com/en-au/rest/api/sql/2022-05-01-preview/virtual-network-rules/list-by-server?tabs=HTTP
+    public async Task<bool> SqlServerIsConnectedToVirtualNetwork(string subscriptionId, string resourceGroupName, string virtualNetworkName, string sqlServerName)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{sqlServerName}/virtualNetworkRules?api-version=2022-05-01-preview");
+        response.EnsureSuccessStatusCode();
+        var sqlServerVirtualNetworkRules = await response.Content.ReadFromJsonAsync<SqlServerVirtualNetworkRuleResponse>(_jsonSerializerOptions);
+        return sqlServerVirtualNetworkRules.Value.Any(x => x.Properties.VirtualNetworkSubnetId.EndsWith($"{virtualNetworkName}/subnets/default"));
+    }
+
+    // https://learn.microsoft.com/en-au/rest/api/virtualnetwork/virtual-networks/get?tabs=HTTP
+    private async Task<VirtualNetwork> GetVirtualNetwork(string subscriptionId, string resourceGroupName, string virtualNetwork)
+    {
+        var response = await Get($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetwork}?api-version=2022-07-01");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<VirtualNetwork>(_jsonSerializerOptions);
+    }
+
     private async Task<HttpResponseMessage> Get(string path)
     {
         await PrepareHttpClient();
@@ -392,6 +452,17 @@ public class AzureProvider
         public bool AllowBlobPublicAccess { get; set; }
         public bool AllowSharedKeyAccess { get; set; }
         public bool SupportsHttpsTrafficOnly { get; set; }
+        public StorageAccountPropertiesNetworkAcl NetworkAcls { get; set; }
+    }
+
+    private class StorageAccountPropertiesNetworkAcl
+    {
+        public StorageAccountPropertiesNetworkAclVirtualNetworkRule[] VirtualNetworkRules { get; set; }
+    }
+
+    private class StorageAccountPropertiesNetworkAclVirtualNetworkRule
+    {
+        public string Id { get; set; }
     }
 
     private class KeyVault
@@ -403,6 +474,7 @@ public class AzureProvider
     {
         public KeyVaultAccessPolicy[] AccessPolicies { get; set; }
         public string PublicNetworkAccess { get; set; }
+        public KeyVaultNetworkAcls NetworkAcls { get; set; }
     }
 
     private class KeyVaultAccessPolicy
@@ -421,6 +493,16 @@ public class AzureProvider
     private class KeyVaultSecret
     {
         public string Value { get; set; }
+    }
+
+    private class KeyVaultNetworkAcls
+    {
+        public KeyVaultNetworkAclsVirtualNetworkRules[] VirtualNetworkRules { get; set; }
+    }
+
+    private class KeyVaultNetworkAclsVirtualNetworkRules
+    {
+        public string Id { get; set; }
     }
 
     private class SqlServer
@@ -458,6 +540,21 @@ public class AzureProvider
     private class SqlServerIpRestriction
     {
         public string Name { get; set; }
+    }
+
+    private class SqlServerVirtualNetworkRuleResponse
+    {
+        public SqlServerVirtualNetworkRule[] Value { get; set; }
+    }
+
+    private class SqlServerVirtualNetworkRule
+    {
+        public SqlServerVirtualNetworkRuleProperties Properties { get; set; }
+    }
+
+    private class SqlServerVirtualNetworkRuleProperties
+    {
+        public string VirtualNetworkSubnetId { get; set; }
     }
 
     private class AppService
@@ -566,5 +663,38 @@ public class AzureProvider
     private class RbacDefinitionProperties
     {
         public string RoleName { get; set; }
+    }
+
+    private class VirtualNetwork
+    {
+        public VirtualNetworkProperties Properties { get; set; }
+    }
+
+    private class VirtualNetworkProperties
+    {
+        public VirtualNetworkAddressSpace AddressSpace { get; set; }
+        public VirtualNetworkSubnet[] Subnets { get; set; }
+    }
+
+    private class VirtualNetworkAddressSpace
+    {
+        public string[] AddressPrefixes { get; set; }
+    }
+
+    private class VirtualNetworkSubnet
+    {
+        public string Name { get; set; }
+        public VirtualNetworkSubnetProperties Properties { get; set; }
+    }
+
+    private class VirtualNetworkSubnetProperties
+    {
+        public string AddressPrefix { get; set; }
+        public VirtualNetworkServiceEndpoint[] ServiceEndpoints { get; set; }
+    }
+
+    private class VirtualNetworkServiceEndpoint
+    {
+        public string Service { get; set; }
     }
 }

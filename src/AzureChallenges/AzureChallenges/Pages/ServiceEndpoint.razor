@@ -1,25 +1,16 @@
-﻿@page "/appservice"
+﻿@page "/serviceendpoint"
 @using AzureChallenges.Data
-@inject AppServiceChallengeService ChallengeService;
+@inject ServiceEndpointChallengeService ChallengeService;
 
-<h3>App Service</h3>
+<h3>Virtual Network - Service Endpoint</h3>
 
 <table class="table table-sm" style="max-width: fit-content">
     <tbody>
-    <SectionField Title="Subscription Id" Value="@_state.SubscriptionId" />
-    <SectionField Title="Resource Group" Value="@_state.ResourceGroup" />
-    <SectionField Title="App Service" Value="@_state.AppService"/>
+        <SectionField Title="Subscription Id" Value="@_state.SubscriptionId" />
+        <SectionField Title="Resource Group" Value="@_state.ResourceGroup" />
+        <SectionField Title="Virtual Network" Value="@_state.VirtualNetwork" />
     </tbody>
 </table>
-
-<div class="alert alert-info mt-4">
-    <span class="oi oi-pencil me-2" aria-hidden="true"></span>
-    <strong>Have you completed the other challenges?</strong>
-
-    <span class="text-nowrap">
-        You can still start these challenges if you want, but its best to complete the other challenges first.
-    </span>
-</div>
 
 @if (!_challenges.Any())
 {

@@ -108,6 +108,7 @@ public enum ResourceType
     KeyVault,
     SqlServer,
     AppService,
+    ServiceEndpoint,
 }
 
 public enum ChallengeType

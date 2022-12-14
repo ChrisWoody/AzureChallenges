@@ -43,6 +43,8 @@ public class StateService
             state.SqlServer = challenge.Input;
         else if (challenge.ChallengeDefinition.Id == Guid.Parse("cc194d7d-4866-46f9-b8f7-a193bd7f3810"))
             state.AppService = challenge.Input;
+        else if (challenge.ChallengeDefinition.Id == Guid.Parse("19247c68-09a7-4b9a-bc59-fd10186ce546"))
+            state.VirtualNetwork = challenge.Input;
 
         await SaveState(state);
     }
@@ -69,5 +71,6 @@ public class State
     public string KeyVault { get; set; }
     public string SqlServer { get; set; }
     public string AppService { get; set; }
+    public string VirtualNetwork { get; set; }
     public Guid[] CompletedChallenges { get; set; } = Array.Empty<Guid>();
 }

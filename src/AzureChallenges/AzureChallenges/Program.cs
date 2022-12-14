@@ -13,6 +13,7 @@ builder.Services.AddScoped<KeyVaultChallengeService>();
 builder.Services.AddScoped<SqlServerChallengeService>();
 builder.Services.AddScoped<AppServiceChallengeService>();
 builder.Services.AddScoped<BasicChallengeService>();
+builder.Services.AddScoped<ServiceEndpointChallengeService>();
 builder.Services.AddSingleton(await StateStorageService.Create(builder.Configuration["StorageAccountConnctionString"]));
 builder.Services.AddSingleton<AzureProvider>();
 builder.Services.AddSingleton<StateCache>();
