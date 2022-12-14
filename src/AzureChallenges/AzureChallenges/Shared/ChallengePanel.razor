@@ -101,7 +101,7 @@
     public Challenge Challenge { get; set; }
 
     [Parameter]
-    public ChallengeService ChallengeService { get; set; }
+    public ChallengeServiceBase ChallengeService { get; set; }
 
     [Parameter]
     public Func<Task> OnAfterCheckChallenge { get; set; }

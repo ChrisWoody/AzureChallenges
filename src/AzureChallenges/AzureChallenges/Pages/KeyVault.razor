@@ -1,6 +1,6 @@
 ﻿@page "/keyvault"
 @using AzureChallenges.Data
-@inject ChallengeService ChallengeService;
+@inject KeyVaultChallengeService ChallengeService;
 
 <h3>Key Vault</h3>
 
@@ -38,7 +38,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _state = await ChallengeService.GetState();
-        _challenges = await ChallengeService.GetChallenges(ResourceType.KeyVault);
+        _challenges = await ChallengeService.GetChallenges();
     }
 
     private async Task OnAfterCheckChallenge()

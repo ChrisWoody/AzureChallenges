@@ -1,6 +1,6 @@
 ﻿@page "/appservice"
 @using AzureChallenges.Data
-@inject ChallengeService ChallengeService;
+@inject AppServiceChallengeService ChallengeService;
 
 <h3>App Service</h3>
 
@@ -38,7 +38,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _state = await ChallengeService.GetState();
-        _challenges = await ChallengeService.GetChallenges(ResourceType.AppService);
+        _challenges = await ChallengeService.GetChallenges();
     }
 
     private async Task OnAfterCheckChallenge()
