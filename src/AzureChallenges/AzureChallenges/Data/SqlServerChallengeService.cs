@@ -20,9 +20,10 @@ public class SqlServerChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("60730b90-d133-43be-9e5a-1c181a24f921"),
                 ResourceType = ResourceType.SqlServer,
                 Name = "Create",
-                Description = "SQL Server stores pools and databases",
-                Hint = "NOTE you won't be able to create a SQL Server via the Azure Portal because of our Azure Policy and that functionality is missing, use the command line OR i can provision for you",
-                // TODO consider providing more direction around the auth, likely support sql admin and ad auth and they can choose which one to connect with later on
+                Description = "SQL Server in Azure allows you to host databases, either on their own or in a pool, along with various pricing and performance tiers.",
+                Statement = "Try and create a 'SQL Server (logical server)' in your Resource Group. What is its name?",
+                Hint = "NOTE you won't be able to create a SQL Server via the Azure Portal because of our Azure Policy and that functionality is missing in the portal. " +
+                       "Use this command to provision it or let me know and I can provision it for you: 'az sql server create -g <nameofresourcegroup> -n <nameofsqlserver> -l <location> -u <adminusername> -p <somecomplexpassword> --minimal-tls-version 1.2 --subscription <subscriptionid>'",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -50,7 +51,7 @@ public class SqlServerChallengeService : ChallengeServiceBase
                     if (state.SqlServer.HasValue() && await AzureProvider.SqlServerTls12Configured(state.SubscriptionId, state.ResourceGroup, state.SqlServer))
                     {
                         c.Completed = true;
-                        c.Success = "Success!";
+                        c.Success = "Success! It was obviously provisioned with TLS 1.2 but that's OK";
                     }
                     else
                         c.Error = "SQL Server is not configured correctly";
@@ -62,8 +63,9 @@ public class SqlServerChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("fd64f4d9-43ac-43ca-b22e-933320bc4623"),
                 ResourceType = ResourceType.SqlServer,
                 Name = "Auditing",
-                Description = "With Auditing on SQL Server, it is possible to see every query made against databases on the server, including by who, when and how long the query took to run.",
-                Statement = "Configure Auditing on your SQL Server, pointing to your 'log' storage account.",
+                Description = "With Auditing on a SQL Server, it is possible to see every query made against databases on the server, including by who, when and how long the query took to run. " +
+                              "This is very helpful for investigating exfiltration attempts on a database.",
+                Statement = "Configure Auditing on your SQL Server, pointing to your 'log' storage account you created earlier.",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -83,7 +85,7 @@ public class SqlServerChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("33e20f16-68d2-431f-9691-91a95a5105d4"),
                 ResourceType = ResourceType.SqlServer,
                 Name = "IP Restriction",
-                Description = "By default SQL Server will block all incoming requests unless you allow them via IP Restrictions, vnets or allowing all Azure resources.",
+                Description = "By default SQL Server will block all incoming requests unless you allow them via IP Restrictions, Virtual Networks or allowing all Azure resources",
                 Statement = "Configure an IP Restriction on your SQL Server with any IP (i.e. your work or home IP)",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
@@ -104,8 +106,10 @@ public class SqlServerChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("ac5e0f0e-87e7-4c5c-a4f5-342e95e1f2b6"),
                 ResourceType = ResourceType.SqlServer,
                 Name = "Allowing Azure Resources",
-                Description = "If we just had an IP restriction to connect via the office, services like an App Service will fail to connect to the SQL Server to query a database. We'll go through a couple of ways to connect securely later, but for now we'll just allow any Azure resource to connect.",
-                Statement = "Configure the 'Allow Azure services and resources to access this server' exception on your SQL Server",
+                Description = "If we just had an IP restriction to connect via the office, resources like an App Service will fail to connect to the SQL Server to query a database. " +
+                              "We'll go through a couple of ways to connect securely later, but for now we'll just allow any Azure resource to connect. This is not tied a Tenant, anyone" +
+                              " from any Tenant would be able to access it (if they had the credential of course).",
+                Statement = "Enable the 'Allow Azure services and resources to access this server' exception on your SQL Server",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -170,7 +174,7 @@ public class SqlServerChallengeService : ChallengeServiceBase
                 ResourceType = ResourceType.SqlServer,
                 Name = "Optional Quiz - Inspect audit log",
                 Description = "If you have SQL Server Management Studio (SSMS) installed you can view the audit log file. " +
-                              "By default it only shows the 'name' and 'timestamp' columns, you can choose whichs columns appear including 'statement' which is the actual SQL query that was run.",
+                              "By default it only shows the 'name' and 'timestamp' columns, you can choose which columns appear including 'statement' which is the actual SQL query that was run.",
                 Statement = "What is the 'action_name' of the query you ran? Use 'who knows' if you'd like to skip this challenge.",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>

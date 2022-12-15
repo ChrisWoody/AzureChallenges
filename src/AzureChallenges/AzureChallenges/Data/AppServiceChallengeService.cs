@@ -20,8 +20,8 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("cc194d7d-4866-46f9-b8f7-a193bd7f3810"),
                 ResourceType = ResourceType.AppService,
                 Name = "Create",
-                Description = "App Services allow us to host websites and run background jobs",
-                Statement = "Create an App Service on Basic tier, .NET 7 and without Application Insights. What is the name of the App Service?",
+                Description = "App Services allow us to host websites and run background jobs, along with scaling out automatically to handle incoming load. A variety of frameworks could be used including .net, node, python and php.",
+                Statement = "Create an App Service on Basic tier with .NET 7 (without Application Insights) in your Resource Group. What is the name of the App Service?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -41,7 +41,7 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("129ad12d-6e94-4ac6-bc3f-efc2c2c5c5d5"),
                 ResourceType = ResourceType.AppService,
                 Name = "HTTPS Only",
-                Description = "Regardless if we're using the App Service as a website or a webjob runner, we should always be using HTTPS.",
+                Description = "Regardless if we're using the App Service as a website or a webjob runner, we should always be using HTTPS when we make requests to the website.",
                 Statement = "Make sure the 'HTTPS Only' flag is enabled",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
@@ -62,7 +62,8 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("89d7bafc-d52b-4c3c-9a5d-2bfd4cb21e2e"),
                 ResourceType = ResourceType.AppService,
                 Name = "Always On",
-                Description = "If we're paying for the app service regardless if its actively used or not, we should have 'Always On' enabled, this improves cold start time for accessing the website and deployments.",
+                Description = "Not security related, but if we're paying for the App Service regardless if its actively used or not, we should have 'Always On' enabled, " +
+                              "this improves cold start time for accessing the website and also for deployments.",
                 Statement = "Make sure the 'Always On' flag is enabled",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
@@ -83,8 +84,8 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("75f2e941-a8f2-4e35-8a0b-f0ef43a8b8bd"),
                 ResourceType = ResourceType.AppService,
                 Name = "TLS 1.2",
-                Description = "Should always be using TLS 1.2 at least",
-                Statement = "Maked sure TLS is configured at 1.2",
+                Description = "No brainer here, always use at least TLS 1.2",
+                Statement = "Make sure TLS is configured at 1.2 on the App Service",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -104,7 +105,7 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("ec4db30e-02f3-48e7-a37b-749587d7a7d2"),
                 ResourceType = ResourceType.AppService,
                 Name = "FTP Disabled",
-                Description = "We never use FTP to deploy to an App Service, it should be disabled, or at least only allow FTPS (their lingo, basically SFTP).",
+                Description = "We never use FTP to deploy to an App Service, so we should disable it, or if we do at least only allow FTPS (their lingo, basically SFTP).",
                 Statement = "Make sure 'FTP State' is set to 'Disabled'",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
@@ -125,7 +126,8 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("ab1144b4-951f-4948-908b-996d95dcdef8"),
                 ResourceType = ResourceType.AppService,
                 Name = "System assigned Identity",
-                Description = "We don't want to have to manage credentials to services like Storage Accounts or Key Vaults, so configure the App Service to have a System assigned identity.",
+                Description = "We don't want to have to manage credentials to services like Storage Accounts or Key Vaults, " +
+                              "so configure the App Service to have a System assigned identity. A service principal will be registered for us with the same name as the App Service.",
                 Statement = "Enable the 'System assigned' Identity on the App Service",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
@@ -167,7 +169,7 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("f69e66a5-6e89-4229-a6aa-478a53ec7f9a"),
                 ResourceType = ResourceType.AppService,
                 Name = "App Service logs",
-                Description = "Though App Service support Diagnostic logs (setup the same as the Storage Account and Key Vault), for this challenge we'll look at the 'App Service logs'. " +
+                Description = "Though App Services support Diagnostic logs (setup the same way as the Storage Account and Key Vault), for this challenge we'll look at the 'App Service logs'. " +
                               "This allows us to store logs on the App Service's local storage or export to a Storage Account. With local storage configured you can use log streaming too.",
                 Statement = "Configure 'Application logging (Blob)' and 'Web server logging' to your 'log' Storage Account. You can put them in 'logs' and 'logs-iis' containers respectively if you want.",
                 ChallengeType = ChallengeType.CheckConfigured,
@@ -189,7 +191,7 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("ae4d8fc4-f3bc-48aa-8c87-b1ee0be2b495"),
                 ResourceType = ResourceType.AppService,
                 Name = "Optional - Inspect generated logs",
-                Description = "Navigate to your website a few times and have a look at the IIS logs. These will show when a HTTP request is made, the path, response status code and more.",
+                Description = "Navigate to your website a few times and have a look at the IIS logs. These will show when HTTP request is made and detail the path, response status code and more.",
                 Statement = "Did you inspect the logs?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
@@ -209,7 +211,7 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 ResourceType = ResourceType.AppService,
                 Name = "'Connection checker' website configuration",
                 Description = "You have provisioned a couple of services now, lets validate that the App Service can connect to them with it's identity. Before we deploy the 'Connection checker' website you'll need to configure some 'Application settings' on your App Service.",
-                Statement = $"Add the following Application settings: StorageAccountName = {{your Storage Account name}}, KeyVaultName = {{your Key Vault name}}, SqlServerName = {{your SQL Server name}} and TenantId = {Configuration["TenantId"]}. Have you added those settings?",
+                Statement = $"Add the following Application settings to your App Service: StorageAccountName = {{your Storage Account name}}, KeyVaultName = {{your Key Vault name}}, SqlServerName = {{your SQL Server name}} and TenantId = {Configuration["TenantId"]}. Have you added those settings?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
                 {
@@ -232,8 +234,9 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("9d2692c6-4c3c-4443-a75a-2ed0584572f6"),
                 ResourceType = ResourceType.AppService,
                 Name = "'Connection checker' website upload",
-                Description = "There are various ways to deploy to an App Service, here we'll use the Kudu portal and have it nicely deploy our .zip for us.",
-                Statement = "Right-click and save the zip, navigate to 'https://<website name here>.scm.azurewebsites.net/ZipDeployUI' and drag the zip onto the page. After that's completed navigate to your website 'https://<website name here>.azurewebsites.net'. You might see some errors but that's OK! Are you ready to continue?",
+                Description = "There are various ways to deploy to an App Service, but here we'll use the Kudu portal and have it nicely deploy our .zip for us.",
+                Statement = "Right-click and save the zip linked below, navigate to 'https://<website name here>.scm.azurewebsites.net/ZipDeployUI' and drag the zip onto the page. " +
+                            "After that's completed navigate to your website 'https://<website name here>.azurewebsites.net'. You might see some errors but that's OK! Are you ready to continue?",
                 Link = "/downloads/AzureChallenges.ConnectionCheckerWebsite.zip",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
@@ -316,20 +319,6 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.AppService.HasValue() && s.SqlServer.HasValue()
             },
-
-            // NEXT STEPS
-            // - FAQ
-            // - More quizzes
-            // - Wording improvements everywhere
-            // - Add vnets and service endpoints somewhere, likely its own custom page, unsure if it would be set of challenges like everything else or just some direction
-            // - Then vnets and private links same as above
-
-            // Could provide basic code for a website that will check it can connect to key vault/storage/database server, showing how to build/deploy it and setting the urls
-            // Once they've deployed it it will show it can't connect, have them wire up their website's identity to access the resources (list permisions on keyvault, admin on db server just for simplicity, blob contributor)
-            // Refreshing the page should show it can now connect
-            // Next step is to configure them in vnets and service endpoints, confirm via the website that it can still connect
-            // Then making all the services non-public, setting up private links, updating urls to those services likely, and confirm it can still connect
-            // Might be a 'try this, but dont have much instructions for you at the moment'
         };
     }
 }

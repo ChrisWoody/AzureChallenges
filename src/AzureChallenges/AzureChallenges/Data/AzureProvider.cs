@@ -235,6 +235,11 @@ public class AzureProvider
         return auditing.Value.Any(x => x.Name.Equals("AllowAllWindowsAzureIps", StringComparison.OrdinalIgnoreCase));
     }
 
+    public async Task<bool> SqlServerDisallowAzureResourcesException(string subscriptionId, string resourceGroupName, string sqlServerName)
+    {
+        return !await SqlServerAllowAzureResourcesException(subscriptionId, resourceGroupName, sqlServerName);
+    }
+
     public async Task<bool> AppServiceExists(string subscriptionId, string resourceGroupName, string appServiceName)
     {
         try

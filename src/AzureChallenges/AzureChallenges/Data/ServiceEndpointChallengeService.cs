@@ -13,10 +13,6 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
 
     protected override IEnumerable<ChallengeDefinition> GetChallengeDefinitions()
     {
-        // service endpoint notes
-        // - connect app service
-        // - can still view website?
-        
         return new[]
         {
             new ChallengeDefinition
@@ -46,7 +42,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("fa34eecd-28f6-4a9b-85b4-5e0b0040e42d"),
                 ResourceType = ResourceType.ServiceEndpoint,
                 Name = "Quiz",
-                Statement = "For the 'default' subnet, what is the 'Available IPs' number?",
+                Statement = "For the 'default' subnet, what is the number of 'Available IPs'?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -68,7 +64,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                 Name = "Enable Service Endpoints",
                 Description = "Resources like VMs can connect directly to a Virtual Network, however resources like Storage Accounts and Key Vaults require a special connection " +
                               "to be able to join a Virtual Network. This is where Service Endpoints come in, they allow these other Azure resources to join Virtual Networks and access resources contained within them.",
-                Statement = "On the 'default' subnet, enable the 'Microsoft.KeyVault', 'Microsoft.Sql' and 'Microsoft.Storage' Service Endpoints.",
+                Statement = "On the 'default' subnet of your Virtual Network, enable the 'Microsoft.KeyVault', 'Microsoft.Sql' and 'Microsoft.Storage' Service Endpoints.",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -148,10 +144,32 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
             },
             new ChallengeDefinition
             {
+                Id = Guid.Parse("67e38bf5-3a05-4221-b736-a8cd2846170b"),
+                ResourceType = ResourceType.ServiceEndpoint,
+                Name = "Update SQL Server to block Azure services",
+                Description = "Now that we've connected the SQL Server to the Virtual Network, we no longer need to allow all Azure services access to it.",
+                Statement = "Disable the 'Allow Azure services and resources to access this server' on your SQL Server instance.",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await StateService.GetState();
+                    if (state.VirtualNetwork.HasValue() && await AzureProvider.SqlServerDisallowAzureResourcesException(state.SubscriptionId, state.ResourceGroup, state.SqlServer))
+                    {
+                        c.Completed = true;
+                        c.Success = "Success!";
+                    }
+                    else
+                        c.Error = "SQL Server is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
+            },
+            new ChallengeDefinition
+            {
                 Id = Guid.Parse("8ab1eda8-de6a-4af9-9be5-6d98b8f05d42"),
                 ResourceType = ResourceType.ServiceEndpoint,
                 Name = "Quiz",
-                Statement = "Go back to your website on 'https://<website name here>.azurewebsites.net' and refresh, can your website connect to the services anymore?",
+                Statement = "Go back to your website on 'https://<website name here>.azurewebsites.net' and refresh, can your website connect to ALL of the services?",
+                Hint = "The website may still be able to connect to SQL Server due to eventual consistency so don't be alarmed",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new[]
                 {
@@ -161,7 +179,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                 ValidateFunc = async c =>
                 {
                     c.Completed = true;
-                    c.Success = c.Input == "Yes" ? "Surprising but OK" : "Wonderful! Lets fix that";
+                    c.Success = c.Input == "Yes" ? "That's surprising but OK, we'll continue like nothing has happened" : "Wonderful! Lets fix that";
                 },
                 CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
             },
@@ -192,6 +210,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                 ResourceType = ResourceType.ServiceEndpoint,
                 Name = "Quiz",
                 Statement = "Go back to your website on 'https://<website name here>.azurewebsites.net' and refresh, can your website connect to the services now?",
+                Hint = "You may need to wait a few minutes and refresh a few times, again eventual consistency",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new[]
                 {
@@ -203,7 +222,8 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                     if (c.Input == "Yes")
                     {
                         c.Completed = true;
-                        c.Success = "Nice well done! Now refresh this page to see the next set of challenges.";
+                        c.Success = "Nice well done! To summarise what's happened, you've configured your Azure resources to be only accessible via the Virtual Network. You can also configure them to accessible from say the office IP for support purposes. " +
+                                    "By linking the App Service we avoid having to add its IP addresses to each service as a way of locking things down.";
                     }
                     else
                         c.Error = "Ah that's not ideal, check the errors on the page to diagnose further.";

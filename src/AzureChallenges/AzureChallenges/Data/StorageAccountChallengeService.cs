@@ -20,9 +20,9 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("15202bbe-94ad-4ebf-aa15-ed93b5cef11e"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Create",
-                Description = "Storage accounts do stuff, create one.",
-                Statement = "What is the name of the Storage Account you've created?",
-                Hint = "Try to keep your resources in the same Location as the Resource Group, and don't worry too much about the various options when creating a storage account, we'll configure them in the next set of challenges.",
+                Description = "Storage Accounts are a cost-effective (mostly) way of storing lots of files (called blobs), but also support other services like Files, Queues and (nosql) Tables.",
+                Statement = "Create a Storage Account in your Resource Group. What is the name of the Storage Account",
+                Hint = "Try to keep your resources in the same Location as the Resource Group, and don't worry too much about the various options when creating a Storage Account, we'll configure them in the next set of challenges.",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {
@@ -42,8 +42,8 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("94fbda2b-b310-484f-960a-b7ac804aea1e"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Secure Transfer",
-                Description = "All requests should be over HTTPS, especially if we're dealing with sensitive data.",
-                Statement = "Make 'Secure transfer required' is enabled on the Storage Account.",
+                Description = "In general, all requests to a service should be over HTTPS, especially if we're dealing with sensitive data which we may be storing on the Storage Account.",
+                Statement = "Enable 'Secure transfer required' on the Storage Account.",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -63,7 +63,7 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("23bd7ee0-ab51-4a91-a4dc-ddb5f4cf4877"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "TLS1.2",
-                Description = "All our requests should be over TLS1.2, this allows us to enforce it at the resource level too.",
+                Description = "While we are only allowing HTTPS connections, we should also be using TLS1.2 at a minimum. We can enforce this on the Storage Account.",
                 Statement = "Make sure the minimum TLS version is configured as '1.2' on the Storage Account",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
@@ -72,7 +72,8 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                     if (state.StorageAccount.HasValue() && await AzureProvider.StorageAccountTls12Configured(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
                     {
                         c.Completed = true;
-                        c.Success = "Depending on how you provisioned the Storage Account, you may have noticed you couldn't create it unless you specified TLS 1.2. Our Azure Policy prevents most services from being provisioned or updated unless TLS 1.2 is set.";
+                        c.Success = "Depending on how you provisioned the Storage Account, you may have noticed you couldn't create it unless you specified TLS 1.2. " +
+                                    "Our Azure Policy prevents most services from being provisioned or updated unless TLS 1.2 is set.";
                     }
                     else
                         c.Error = "Storage Account is not configured correctly";
@@ -84,8 +85,9 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("ab8c1780-738a-49d2-9474-db6a01865c99"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Public Blob access",
-                Description = "Rarely would we have files publicly accessible, so its best practice to not allow them to be configured",
-                Statement = "Make sure 'Allow Public blob access' is disabled on the Storage Account",
+                Description = "Rarely would we have files publicly accessible, specifically 'anonymously' accessible. " +
+                              "Even though we can mark our containers as 'private', it doesn't stop someone from changing it or creating a public container or file.",
+                Statement = "Disable 'Allow Public blob access' on the Storage Account",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -93,7 +95,7 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                     if (state.StorageAccount.HasValue() && await AzureProvider.StorageAccountPublicBlobAccessDisabled(state.SubscriptionId, state.ResourceGroup, state.StorageAccount))
                     {
                         c.Completed = true;
-                        c.Success = "Success!";
+                        c.Success = "Success! If we need files to be publicly accessible, we should consider the use case and sensitivity of the files.";
                     }
                     else
                         c.Error = "Storage Account is not configured correctly";
@@ -105,16 +107,17 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("50354c41-a4ce-4090-8f64-db87c2e539cb"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Public Network Access",
-                Description = "Even if we don't allow blobs to be publicly (i.e. anonymously) accessible, its still possible to connect to a Storage Account from anywhere. There is a flag that allows you to disable any public network access, which means only connections can be made from within a virtual network.",
+                Description = "Even if we don't allow blobs to be publicly (i.e. anonymously) accessible, its still possible to connect to a Storage Account from anywhere in the world by default. " +
+                              "There is a flag that allows you to disable any public network access, which means only connections can be made from within a virtual network.",
                 Statement = "We'll leave this flag disabled for now and come back to it later. Is that OK with you?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
                 {
-                    "Yes", "No"
+                    "Yes", "No", "Nah yeah"
                 },
                 ValidateFunc = async c =>
                 {
-                    if (c.Input == "Yes")
+                    if (c.Input == "Yes" || c.Input == "Nah yeah")
                     {
                         c.Completed = true;
                         c.Success = "Success!";
@@ -128,9 +131,9 @@ public class StorageAccountChallengeService : ChallengeServiceBase
             {
                 Id = Guid.Parse("c39e95d7-daaf-4635-9ecb-9a78cafff9b8"),
                 ResourceType = ResourceType.StorageAccount,
-                Name = "Shared account key access",
-                Description = "To avoid having the full connection string of a storage account, we can configure AD-only auth to it",
-                Statement = "Make sure 'Allow storage account key access' is disabled on the Storage Account'",
+                Name = "Shared Account Key access",
+                Description = "By default Storage Accounts use a Shared Access Key To avoid having the full connection string of a storage account, we can configure AD-only auth to it",
+                Statement = "Disable 'Allow storage account key access' on the Storage Account'",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
@@ -149,8 +152,10 @@ public class StorageAccountChallengeService : ChallengeServiceBase
             {
                 Id = Guid.Parse("fab1e5f0-e14a-4593-b672-aa9b41c153b6"),
                 ResourceType = ResourceType.StorageAccount,
-                Name = "Challenge prep and Quiz",
-                Description = "In preparation for future challenges, create another storage account that we'll use to store logs. Unlike the Storage Account you've just configured, for this new one make sure that 'Shared Access Key' and 'Public Network Access' are both allowed, and that it's located in the same region as the original Storage Account.",
+                Name = "Challenge prep",
+                Description = "In preparation for future challenges, create another storage account that we'll use to store logs. " +
+                              "Unlike the Storage Account you've just configured for this new one make sure that 'Shared Access Key' and 'Public Network Access' are both allowed/enabled, " +
+                              "and that it's located in the same region as the original Storage Account.",
                 Statement = "Have you created this new 'log' Storage Account?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new []
@@ -174,8 +179,9 @@ public class StorageAccountChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("a0a62f76-77cb-4cde-b2b0-c54da6ac00eb"),
                 ResourceType = ResourceType.StorageAccount,
                 Name = "Diagnostic settings",
-                Description = "Several Azure resources support 'Diagnostic Settings' which allow you to log operations against the resource, with this you can audit all the operations against a resource, including who accessed it and when. Also by disabling the Shared Access Key and requiring AD Auth, this can be correlated to an identity.",
-                Statement = "Configure the Diagnostic Settings for 'blob' on your original Storage Account with StorageRead, StorageWrite and StorageDelete enabled, uploading to your new 'log' storage account",
+                Description = "Several Azure resources support 'Diagnostic Settings' which allow you to log operations against the resource, with this you can audit all the operations against a resource, " +
+                              "including who accessed it and when. Also by disabling the Shared Access Key (which means it requires AD Auth), this can be correlated to an identity.",
+                Statement = "Configure the Diagnostic Settings for 'blob' on your original Storage Account with 'StorageRead', 'StorageWrite' and 'StorageDelete' enabled, pointing to your new 'log' storage account",
                 ChallengeType = ChallengeType.CheckConfigured,
                 ValidateFunc = async c =>
                 {
