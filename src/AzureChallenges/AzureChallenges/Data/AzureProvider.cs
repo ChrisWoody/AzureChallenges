@@ -409,6 +409,12 @@ public class AzureProvider
         return sqlServerVirtualNetworkRules.Value.Any(x => x.Properties.VirtualNetworkSubnetId.EndsWith($"{virtualNetworkName}/subnets/default"));
     }
 
+    public async Task<bool> AppServiceIsConnectedToVirtualNetwork(string subscriptionId, string resourceGroupName, string virtualNetworkName, string appServiceName)
+    {
+        var appService = await GetAppService(subscriptionId, resourceGroupName, appServiceName);
+        return appService.Properties.VirtualNetworkSubnetId?.EndsWith($"{virtualNetworkName}/subnets/default") ?? false;
+    }
+
     // https://learn.microsoft.com/en-au/rest/api/virtualnetwork/virtual-networks/get?tabs=HTTP
     private async Task<VirtualNetwork> GetVirtualNetwork(string subscriptionId, string resourceGroupName, string virtualNetwork)
     {
@@ -569,6 +575,7 @@ public class AzureProvider
     private class AppServiceProperties
     {
         public bool HttpsOnly { get; set; }
+        public string VirtualNetworkSubnetId { get; set; }
     }
 
     private class AppServiceIdentity

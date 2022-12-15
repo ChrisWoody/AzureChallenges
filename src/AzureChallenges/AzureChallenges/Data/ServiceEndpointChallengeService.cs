@@ -39,7 +39,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                     else
                         c.Error = $"Could not find Virtual Network '{c.Input}', or it is not configured correctly.";
                 },
-                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue()
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
             },
             new ChallengeDefinition
             {
@@ -59,7 +59,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                     else
                         c.Error = "Sorry that's incorrect";
                 },
-                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue()
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
             },
             new ChallengeDefinition
             {
@@ -81,7 +81,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                     else
                         c.Error = "Virtual Network is not configured correctly";
                 },
-                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue()
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
             },
             new ChallengeDefinition
             {
@@ -102,7 +102,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                     else
                         c.Error = "Storage Account is not configured correctly";
                 },
-                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.StorageAccount.HasValue()
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
             },
             new ChallengeDefinition
             {
@@ -123,7 +123,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                     else
                         c.Error = "Key Vault is not configured correctly";
                 },
-                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.KeyVault.HasValue()
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
             },
             new ChallengeDefinition
             {
@@ -144,7 +144,71 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                     else
                         c.Error = "SQL Server is not configured correctly";
                 },
-                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue()
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("8ab1eda8-de6a-4af9-9be5-6d98b8f05d42"),
+                ResourceType = ResourceType.ServiceEndpoint,
+                Name = "Quiz",
+                Statement = "Go back to your website on 'https://<website name here>.azurewebsites.net' and refresh, can your website connect to the services anymore?",
+                ChallengeType = ChallengeType.Quiz,
+                QuizOptions = new[]
+                {
+                    "Yes",
+                    "No"
+                },
+                ValidateFunc = async c =>
+                {
+                    c.Completed = true;
+                    c.Success = c.Input == "Yes" ? "Surprising but OK" : "Wonderful! Lets fix that";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("f7059156-b2ef-4b48-808c-7a750cf86044"),
+                ResourceType = ResourceType.ServiceEndpoint,
+                Name = "Connect App Service to Virtual Network",
+                Description = "Now that the Service Endpoints are enabled, we can join resources to it.",
+                Statement = "Connect your App Service to the Virtual Network's 'default' subnet via 'VNet Integration'",
+                ChallengeType = ChallengeType.CheckConfigured,
+                ValidateFunc = async c =>
+                {
+                    var state = await StateService.GetState();
+                    if (state.VirtualNetwork.HasValue() && await AzureProvider.AppServiceIsConnectedToVirtualNetwork(state.SubscriptionId, state.ResourceGroup, state.VirtualNetwork, state.AppService))
+                    {
+                        c.Completed = true;
+                        c.Success = "Success! VNet Integration for App Services allows us to access the website as normal, but the website itself can now access resources attached to a Virtual Network.";
+                    }
+                    else
+                        c.Error = "App Service is not configured correctly";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
+            },
+            new ChallengeDefinition
+            {
+                Id = Guid.Parse("1150d3c6-4ffb-401f-8161-f5954bcdb240"),
+                ResourceType = ResourceType.ServiceEndpoint,
+                Name = "Quiz",
+                Statement = "Go back to your website on 'https://<website name here>.azurewebsites.net' and refresh, can your website connect to the services now?",
+                ChallengeType = ChallengeType.Quiz,
+                QuizOptions = new[]
+                {
+                    "Yes",
+                    "No"
+                },
+                ValidateFunc = async c =>
+                {
+                    if (c.Input == "Yes")
+                    {
+                        c.Completed = true;
+                        c.Success = "Nice well done! Now refresh this page to see the next set of challenges.";
+                    }
+                    else
+                        c.Error = "Ah that's not ideal, check the errors on the page to diagnose further.";
+                },
+                CanShowChallenge = s => s.SubscriptionId.HasValue() && s.ResourceGroup.HasValue() && s.VirtualNetwork.HasValue() && s.SqlServer.HasValue() && s.StorageAccount.HasValue() && s.KeyVault.HasValue()
             },
         };
     }

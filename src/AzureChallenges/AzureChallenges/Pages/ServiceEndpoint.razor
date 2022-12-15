@@ -20,11 +20,21 @@ else
 {
     <div style="max-width: 70%">
         <div class="accordion" id="accordionPanelsStayOpenExample">
-            @foreach (var challenge in _challenges)
+            @if (_challenges.All(x => x.ChallengeDefinition.CanShowChallenge != null && !x.ChallengeDefinition.CanShowChallenge(_state)))
             {
-                if (challenge.ChallengeDefinition.CanShowChallenge != null && challenge.ChallengeDefinition.CanShowChallenge(_state))
+                <div class="alert alert-info mt-4">
+                    <span class="oi oi-pencil me-2" aria-hidden="true"></span>
+                    <strong>You'll need to complete the previous challenges before starting these ones</strong>
+                </div>
+            }
+            else
+            {
+                @foreach (var challenge in _challenges)
                 {
-                    <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService" OnAfterCheckChallenge="OnAfterCheckChallenge"/>
+                    if (challenge.ChallengeDefinition.CanShowChallenge != null && challenge.ChallengeDefinition.CanShowChallenge(_state))
+                    {
+                        <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService" OnAfterCheckChallenge="OnAfterCheckChallenge"/>
+                    }
                 }
             }
         </div>
