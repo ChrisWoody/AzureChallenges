@@ -15,7 +15,7 @@
 <p>There's a lot to cover in the space of Virtual Networks, even just Private Endpoints, but here are a few key things to know.</p>
 <ul>
     <li>They are very similar to Service Endpoints, where a special connection is provided to Azure resources to be able to connect to a Virtual Network.</li>
-    <li>Unlike Service Endpoints however, they achieve this by setting up a Virtual Network Interface. This is how VMs in Azure are able join a Virtual Network.</li>
+    <li>Unlike Service Endpoints however, they achieve this by setting up a Virtual Network Interface Card. This is how VMs in Azure are able join a Virtual Network.</li>
     <li>When accessing a resource over a Private Endpoint, the connection is kept within the Virtual Network, so a private IP is provided by a DNS zone when resolving the hostname.</li>
     <li>This is unlike Service Endpoints which connects resources to a Virtual Network over the public internet.</li>
     <li>So if you're particularly concerned about protecting your data, Private Endpoints are a very useful way of limiting how that data is accessed.</li>

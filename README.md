@@ -14,5 +14,6 @@ A website to teach concepts and features in Azure through a list of challenges. 
   - Just refresh the page to see state being cleared
   - Also AD Auth for the website isn't setup locally so it'll run as 'unauthenticated', but the website can be used as if it was authenticated
 - There is a 'connection checker' website too that helps validate an App Service can connect to resources with its Managed Identity.
+- When this is hosted on an App Service, I've configured 'easy auth' so that federated accounts can be used.
 
 ![image](https://user-images.githubusercontent.com/16053164/208029397-f8f1ee8d-f8bf-4c9e-8047-3835be8f598f.png)
