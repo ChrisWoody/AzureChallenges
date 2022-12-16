@@ -21,7 +21,7 @@ public class AppServiceChallengeService : ChallengeServiceBase
                 ResourceType = ResourceType.AppService,
                 Name = "Create",
                 Description = "App Services allow us to host websites and run background jobs, along with scaling out automatically to handle incoming load. A variety of frameworks could be used including .net, node, python and php.",
-                Statement = "Create an App Service on Basic tier with .NET 7 (without Application Insights) in your Resource Group. What is the name of the App Service?",
+                Statement = "Create an App Service on Windows, at the Basic tier with .NET 7 (without Application Insights) in your Resource Group. What is the name of the App Service?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {

@@ -68,7 +68,7 @@ app.MapGet("/", async () =>
     }
     catch (Exception e)
     {
-        sqlServerError = $"Failed to connect to Sql Server '{app.Configuration["SqlServer"]}': {e.Message}";
+        sqlServerError = $"Failed to connect to Sql Server '{app.Configuration["SqlServerName"]}': {e.Message}";
     }
 
     // Build a simple (but nice looking) page to show if we can connect to the services or not

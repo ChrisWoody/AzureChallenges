@@ -22,7 +22,7 @@ public class ServiceEndpointChallengeService : ChallengeServiceBase
                 Name = "Create Virtual Network",
                 Description = "Virtual Networks allow you to simplify how Azure resources are connected. Usually by default all Azure resources connect to each other publicly," +
                               " but by using Virtual Networks we can restrict traffic to resources from our allowed list of IPs and from within that Virtual Network.",
-                Statement = "Create a Virtual Network in your Resource Group with a 10.0.0.0/16 'address space' and a 10.0.0.0/24 'default' subnet, don't worry about the extra security features for now. What is your Virtual Network called?",
+                Statement = "Create a Virtual Network in your Resource Group with a 10.0.0.0/16 'address space' and a 10.0.0.0/24 subnet named 'default', don't worry about the extra security features for now. What is your Virtual Network called?",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {

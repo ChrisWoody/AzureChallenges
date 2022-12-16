@@ -27,7 +27,7 @@ public class StateCache
     {
         using var mutex = new Mutex(true, key);
         mutex.WaitOne(TimeSpan.FromSeconds(30));
-        _stateStorageService.SaveFile(key, JsonSerializer.SerializeToUtf8Bytes(state));
+        _stateStorageService.SaveFile(key, JsonSerializer.SerializeToUtf8Bytes(state, new JsonSerializerOptions{WriteIndented = true}));
         _dict[key] = state;
         mutex.ReleaseMutex();
     }
