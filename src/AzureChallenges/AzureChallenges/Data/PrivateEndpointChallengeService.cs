@@ -44,7 +44,7 @@ public class PrivateEndpointChallengeService : ChallengeServiceBase
                 Id = Guid.Parse("2c10748b-f339-4ae6-a9c2-3c5d4f11f3e3"),
                 ResourceType = ResourceType.PrivateEndpoint,
                 Name = "Check your website",
-                Description = "With public access disabled (which removes the Service Endpoint you setup before) your website will no longer be able to access the resources.",
+                Description = "With public access disabled (which disables the Service Endpoint you setup before) your website will no longer be able to access the resources.",
                 Statement = "Restart your App Service (this will clear any lingering connections it has to the resources). Go to your website and refresh to see that they (shouldn't) connect. Ready to fix that?",
                 ChallengeType = ChallengeType.Quiz,
                 QuizOptions = new[]
