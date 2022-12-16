@@ -23,7 +23,7 @@ public class SqlServerChallengeService : ChallengeServiceBase
                 Description = "SQL Server in Azure allows you to host databases, either on their own or in a pool, along with various pricing and performance tiers.",
                 Statement = "Try and create a 'SQL Server (logical server)' in your Resource Group. What is its name?",
                 Hint = "NOTE you won't be able to create a SQL Server via the Azure Portal because of our Azure Policy and that functionality is missing in the portal. " +
-                       "Use this command to provision it or let me know and I can provision it for you: 'az sql server create -g <nameofresourcegroup> -n <nameofsqlserver> -l <location> -u <adminusername> -p <somecomplexpassword> --minimal-tls-version 1.2 --subscription <subscriptionid>'",
+                       "Use this command to provision it, or I can provision it for you, just fill out the fields and send the command to me: 'az sql server create -g <nameofresourcegroup> -n <nameofsqlserver> -l <location> -u <adminusername> -p <somecomplexpassword> --minimal-tls-version 1.2 --subscription <subscriptionid>'",
                 ChallengeType = ChallengeType.ExistsWithInput,
                 ValidateFunc = async c =>
                 {

@@ -109,6 +109,8 @@ public enum ResourceType
     SqlServer,
     AppService,
     ServiceEndpoint,
+    PrivateEndpoint,
+    Bonus,
 }
 
 public enum ChallengeType

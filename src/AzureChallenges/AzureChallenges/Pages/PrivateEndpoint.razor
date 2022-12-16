@@ -1,0 +1,68 @@
+﻿@page "/privateendpoint"
+@using AzureChallenges.Data
+@inject PrivateEndpointChallengeService ChallengeService;
+
+<h3>Virtual Network - Private Endpoint</h3>
+
+<table class="table table-sm" style="max-width: fit-content">
+    <tbody>
+        <SectionField Title="Subscription Id" Value="@_state.SubscriptionId" />
+        <SectionField Title="Resource Group" Value="@_state.ResourceGroup" />
+        <SectionField Title="Virtual Network" Value="@_state.VirtualNetwork" />
+    </tbody>
+</table>
+
+<p>There's a lot to cover in the space of Virtual Networks, even just Private Endpoints, but here are a few key things to know.</p>
+<ul>
+    <li>They are very similar to Service Endpoints, where a special connection is provided to Azure resources to be able to connect to a Virtual Network.</li>
+    <li>Unlike Service Endpoints however, they achieve this by setting up a Virtual Network Interface. This is how VMs in Azure are able join a Virtual Network.</li>
+    <li>When accessing a resource over a Private Endpoint, the connection is kept within the Virtual Network, so a private IP is provided by a DNS zone when resolving the hostname.</li>
+    <li>This is unlike Service Endpoints which connects resources to a Virtual Network over the public internet.</li>
+    <li>So if you're particularly concerned about protecting your data, Private Endpoints are a very useful way of limiting how that data is accessed.</li>
+</ul>
+
+@if (!_challenges.Any())
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div style="max-width: 70%">
+        <div class="accordion" id="accordionPanelsStayOpenExample">
+            @if (_challenges.All(x => x.ChallengeDefinition.CanShowChallenge != null && !x.ChallengeDefinition.CanShowChallenge(_state)))
+            {
+                <div class="alert alert-info mt-4">
+                    <span class="oi oi-pencil me-2" aria-hidden="true"></span>
+                    <strong>You'll need to complete the previous challenges before starting these ones</strong>
+                </div>
+            }
+            else
+            {
+                @foreach (var challenge in _challenges)
+                {
+                    if (challenge.ChallengeDefinition.CanShowChallenge != null && challenge.ChallengeDefinition.CanShowChallenge(_state))
+                    {
+                        <ChallengePanel Challenge="challenge" ChallengeService="ChallengeService" OnAfterCheckChallenge="OnAfterCheckChallenge"/>
+                    }
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private State _state = new();
+    private Challenge[] _challenges = Array.Empty<Challenge>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _state = await ChallengeService.GetState();
+        _challenges = await ChallengeService.GetChallenges();
+    }
+
+    private async Task OnAfterCheckChallenge()
+    {
+        _state = await ChallengeService.GetState();
+        StateHasChanged();
+    }
+}

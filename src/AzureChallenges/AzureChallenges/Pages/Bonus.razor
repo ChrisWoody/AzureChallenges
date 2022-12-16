@@ -1,16 +1,22 @@
-﻿@page "/appservice"
+﻿@page "/bonus"
 @using AzureChallenges.Data
-@inject AppServiceChallengeService ChallengeService;
+@inject BonusChallengeService ChallengeService;
 
-<h3>App Service</h3>
+<h3>Bonus</h3>
 
 <table class="table table-sm" style="max-width: fit-content">
     <tbody>
-    <SectionField Title="Subscription Id" Value="@_state.SubscriptionId" />
-    <SectionField Title="Resource Group" Value="@_state.ResourceGroup" />
-    <SectionField Title="App Service" Value="@_state.AppService"/>
+        <SectionField Title="Subscription Id" Value="@_state.SubscriptionId" />
+        <SectionField Title="Resource Group" Value="@_state.ResourceGroup" />
+        <SectionField Title="Storage Account" Value="@_state.StorageAccount" />
+        <SectionField Title="Key Vault" Value="@_state.KeyVault" />
+        <SectionField Title="SQL Server" Value="@_state.SqlServer" />
+        <SectionField Title="App Service" Value="@_state.AppService" />
+        <SectionField Title="Virtual Network" Value="@_state.VirtualNetwork" />
     </tbody>
 </table>
+
+<p>Well done on making it this far! If you're looking to do some more interesting things, here are a few options.</p>
 
 @if (!_challenges.Any())
 {
